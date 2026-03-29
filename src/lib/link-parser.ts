@@ -16,23 +16,52 @@ function cleanTeamName(raw: string): string {
 
 const patterns: BettingHousePattern[] = [
   // Betano: /sport/futebol/campeonato/flamengo-palmeiras/12345/
+  // Also: /live/cremonese-vicenza/5629008/
   {
     name: "betano",
-    match: /betano\.com/i,
+    match: /betano\.(com|bet)/i,
     extract: (url) => {
       const segments = new URL(url).pathname.split("/").filter(Boolean);
-      // Find slug with team names (usually contains hyphen and is before numeric ID)
+      // Find slug with team names (before numeric ID)
       const teamSlug = segments.find((s, i) =>
         s.includes("-") && segments[i + 1]?.match(/^\d+$/)
       );
       if (teamSlug) {
-        const parts = teamSlug.split(/-v-|-vs-|-x-/i);
-        if (parts.length === 2) {
+        // Try explicit separators first
+        const vsParts = teamSlug.split(/-v-|-vs-|-x-/i);
+        if (vsParts.length === 2) {
           return {
-            home: cleanTeamName(parts[0]),
-            away: cleanTeamName(parts[1]),
+            home: cleanTeamName(vsParts[0]),
+            away: cleanTeamName(vsParts[1]),
             slug: teamSlug,
             sport: segments.includes("futebol") ? "soccer" : null,
+          };
+        }
+        // Betano often uses single-hyphen: "cremonese-vicenza"
+        // Split by last hyphen and try both halves as team names
+        const lastHyphen = teamSlug.lastIndexOf("-");
+        if (lastHyphen > 0) {
+          const home = teamSlug.substring(0, lastHyphen);
+          const away = teamSlug.substring(lastHyphen + 1);
+          return {
+            home: cleanTeamName(home),
+            away: cleanTeamName(away),
+            slug: teamSlug,
+            sport: segments.includes("futebol") || segments.includes("live") ? "soccer" : null,
+          };
+        }
+      }
+      // Fallback: slug before numeric segment
+      const numIdx = segments.findIndex((s) => /^\d+$/.test(s));
+      if (numIdx > 0) {
+        const slug = segments[numIdx - 1];
+        const lastHyphen = slug.lastIndexOf("-");
+        if (lastHyphen > 0) {
+          return {
+            home: cleanTeamName(slug.substring(0, lastHyphen)),
+            away: cleanTeamName(slug.substring(lastHyphen + 1)),
+            slug,
+            sport: "soccer",
           };
         }
       }

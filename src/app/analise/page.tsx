@@ -121,12 +121,12 @@ export default function AnalisePage() {
       setParsed(data.parsed);
       setSuggestions(data.suggestions || []);
 
-      if (data.match && data.match.confidence >= 70) {
+      if (data.match && data.odds) {
         setMatchedEvent(data.match.event);
         setOdds(data.odds);
         setStep("config");
-        toast.success("Jogo encontrado!", {
-          description: `${data.match.event.homeTeam} vs ${data.match.event.awayTeam} — ${data.match.confidence}% match`,
+        toast.success(data.synthetic ? "Jogo detectado!" : "Jogo encontrado!", {
+          description: `${data.match.event.homeTeam} vs ${data.match.event.awayTeam}${data.synthetic ? " — odds estimadas" : ` — ${data.match.confidence}% match`}`,
         });
       } else if (data.suggestions?.length > 0) {
         setStep("matching");
