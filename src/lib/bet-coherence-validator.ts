@@ -83,15 +83,26 @@ function rel(
   return { type: "relational", left, op, right };
 }
 
+// Cache de constraints por seleção (evita recalcular em loops combinatórios)
+const constraintCache = new Map<string, SelectionImplication>();
+
+function getConstraintCacheKey(selection: BetSelection, homeTeam: string, awayTeam: string): string {
+  return `${selection.market}|${selection.selection}|${homeTeam}|${awayTeam}`;
+}
+
 /**
  * Extrai constraints semânticas de uma seleção.
  * Cada seleção implica condições sobre o estado da partida.
+ * Resultados são cacheados para evitar recálculo em loops combinatórios.
  */
 export function extractConstraints(
   selection: BetSelection,
   homeTeam: string,
   awayTeam: string
 ): SelectionImplication {
+  const cacheKey = getConstraintCacheKey(selection, homeTeam, awayTeam);
+  const cached = constraintCache.get(cacheKey);
+  if (cached) return cached;
   const m = selection.market;
   const s = selection.selection;
   const constraints: Constraint[] = [];
@@ -172,10 +183,10 @@ export function extractConstraints(
       constraints.push(num("ft_total_goals", ">=", 2));
       description = "Ambos os times marcam (mínimo 2 gols)";
     } else if (sel.startsWith("n")) {
-      // "não" — pelo menos um time não marca
-      // Representamos como: home=0 OR away=0
-      // Como não temos OR em constraints, usamos flag especial
-      constraints.push({ type: "numeric", subject: "ft_total_goals", op: ">=", value: 0 }); // placeholder
+      // "não" — pelo menos um time não marca (home=0 OR away=0)
+      // Não podemos representar OR em constraints, mas marcamos com tag especial
+      // para que as regras semânticas detectem conflitos (ex: BTTS:Não + Over 3.5)
+      // Constraint mínima: o total de gols não é restrito, mas sinalizamos a seleção
       description = "Pelo menos um time não marca";
     }
   }
@@ -284,7 +295,9 @@ export function extractConstraints(
     }
   }
 
-  return { market: m, selection: s, constraints, description };
+  const result = { market: m, selection: s, constraints, description };
+  constraintCache.set(cacheKey, result);
+  return result;
 }
 
 // =============================================

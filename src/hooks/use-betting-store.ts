@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import {
   GameInput,
   SportEvent,
@@ -126,15 +126,17 @@ export function useBettingStore() {
       };
 
       const generated = generateBets(input, odds);
-      setState({ result: generated, loading: false });
+      // Ler state atual (pode ter mudado durante o await)
+      const currentState = getSnapshot();
+      const game = currentState.selectedGame!;
 
       // Add to history
       const entry: HistoryEntry = {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
-        game: `${state.selectedGame.homeTeam} vs ${state.selectedGame.awayTeam}`,
-        riskProfile: state.config.riskProfile,
-        totalInvestment: state.config.totalInvestment,
+        game: `${game.homeTeam} vs ${game.awayTeam}`,
+        riskProfile: currentState.config.riskProfile,
+        totalInvestment: currentState.config.totalInvestment,
         totalStaked: generated.bets.reduce((s, b) => s + b.stake, 0),
         potentialReturn: generated.bets.reduce((s, b) => s + b.potentialReturn, 0),
         betsCount: generated.bets.length,
@@ -144,7 +146,7 @@ export function useBettingStore() {
         scenario: generated.scenarioLabel,
         bets: generated.bets,
       };
-      setState({ history: [entry, ...state.history].slice(0, 50) });
+      setState({ result: generated, loading: false, history: [entry, ...currentState.history].slice(0, 50) });
     } catch {
       setState({ loading: false });
     }

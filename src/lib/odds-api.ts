@@ -57,6 +57,17 @@ const SOCCER_LEAGUES = [
   "soccer_league_of_ireland",
 ];
 
+// Limitar concorrência de requests à API
+async function limitConcurrency<T>(tasks: (() => Promise<T>)[], maxConcurrent: number): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = [];
+  for (let i = 0; i < tasks.length; i += maxConcurrent) {
+    const batch = tasks.slice(i, i + maxConcurrent);
+    const batchResults = await Promise.allSettled(batch.map((fn) => fn()));
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 export async function getUpcomingGames(): Promise<SportEvent[]> {
   if (!API_KEY) return getMockGames();
 
@@ -66,24 +77,24 @@ export async function getUpcomingGames(): Promise<SportEvent[]> {
 
   const allGames: SportEvent[] = [];
 
-  // Buscar de múltiplos campeonatos em paralelo
-  const results = await Promise.allSettled(
-    SOCCER_LEAGUES.map(async (league) => {
-      const url = `${BASE_URL}/sports/${league}/odds/?apiKey=${API_KEY}&regions=eu&oddsFormat=decimal&markets=h2h`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) return [];
-      const data = await res.json();
-      if (!Array.isArray(data)) return [];
-      return data.map((event: any) => ({
-        id: event.id,
-        homeTeam: event.home_team,
-        awayTeam: event.away_team,
-        commenceTime: event.commence_time,
-        sport: event.sport_title,
-        sportKey: event.sport_key,
-      }));
-    })
-  );
+  // Buscar de múltiplos campeonatos com concorrência limitada (6 por vez)
+  const tasks = SOCCER_LEAGUES.map((league) => async () => {
+    const url = `${BASE_URL}/sports/${league}/odds/?apiKey=${API_KEY}&regions=eu&oddsFormat=decimal&markets=h2h`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.map((event: any) => ({
+      id: event.id,
+      homeTeam: event.home_team,
+      awayTeam: event.away_team,
+      commenceTime: event.commence_time,
+      sport: event.sport_title,
+      sportKey: event.sport_key,
+    }));
+  });
+
+  const results = await limitConcurrency(tasks, 6);
 
   for (const result of results) {
     if (result.status === "fulfilled" && Array.isArray(result.value)) {
