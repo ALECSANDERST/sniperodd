@@ -613,7 +613,69 @@ function applyAntiErrorFilter(
 }
 
 // =============================================
-// 9. FUNÇÃO PRINCIPAL
+// 9. HELPERS DE GERAÇÃO
+// =============================================
+
+function findBestCombo(
+  candidates: SelectionCandidate[],
+  layer: BankLayer,
+  usedSelectionKeys: Set<string>,
+  analysis: { scenario: GameScenario; confidence: number },
+  minScore: number
+) {
+  const combos = generateCombinations(candidates, layer.maxSelections, layer.oddMin, layer.oddMax);
+
+  let scored = combos.map((c) => ({
+    ...c,
+    quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario),
+  }));
+
+  // Filtrar por score mínimo e sanidade
+  scored = scored.filter((c) => c.quality.total >= minScore && c.selections.length <= 6 && !hasConflict(c.selections));
+
+  // Filtrar seleções já usadas
+  scored = scored.filter((c) =>
+    !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))
+  );
+
+  scored.sort((a, b) => b.quality.total - a.quality.total);
+  return scored.length > 0 ? scored[0] : null;
+}
+
+function buildBet(
+  combo: { selections: SelectionCandidate[]; totalOdd: number; quality: QualityScore },
+  stake: number,
+  layer: BankLayer,
+  index: number,
+  analysis: { scenario: GameScenario; confidence: number }
+): GeneratedBet {
+  return {
+    id: `bet_${index + 1}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    selections: combo.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd })),
+    totalOdd: combo.totalOdd,
+    stake,
+    potentialReturn: +(stake * combo.totalOdd).toFixed(2),
+    riskLevel: layer.riskLevel,
+    explanation: generateExplanation(combo.selections, analysis.scenario, layer.label, combo.quality),
+    layer: layer.label,
+    quality: combo.quality,
+  };
+}
+
+function getProfileOddRange(profile: RiskProfile): { oddMin: number; oddMax: number; maxSelections: number; riskLevel: BetRiskLevel } {
+  const ranges: Record<RiskProfile, { oddMin: number; oddMax: number; maxSelections: number; riskLevel: BetRiskLevel }> = {
+    conservador: { oddMin: 1.3, oddMax: 3.0, maxSelections: 2, riskLevel: "baixo" },
+    moderado: { oddMin: 1.5, oddMax: 5.0, maxSelections: 3, riskLevel: "medio" },
+    agressivo: { oddMin: 2.0, oddMax: 12.0, maxSelections: 3, riskLevel: "alto" },
+    muito_agressivo: { oddMin: 2.0, oddMax: 20.0, maxSelections: 4, riskLevel: "alto" },
+    ultra_agressivo: { oddMin: 1.5, oddMax: 40.0, maxSelections: 5, riskLevel: "muito_alto" },
+    extremo: { oddMin: 1.5, oddMax: 200.0, maxSelections: 6, riskLevel: "extremo" },
+  };
+  return ranges[profile];
+}
+
+// =============================================
+// 10. FUNÇÃO PRINCIPAL
 // =============================================
 
 export function generateBets(input: GameInput, odds: GameOdds): GenerationResult {
@@ -624,54 +686,82 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
   const usedSelectionKeys = new Set<string>();
   const bets: GeneratedBet[] = [];
 
+  // Gerar uma aposta para cada camada
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
+    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, 70);
+    if (!best) continue;
 
-    // Gerar todas as combinações válidas para esta camada
-    const combos = generateCombinations(candidates, layer.maxSelections, layer.oddMin, layer.oddMax);
-
-    // Calcular score de qualidade
-    let scored = combos.map((c) => ({
-      ...c,
-      quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario),
-    }));
-
-    // Aplicar filtro anti-erro
-    scored = applyAntiErrorFilter(scored);
-
-    // Filtrar seleções já usadas (evitar repetição)
-    scored = scored.filter((c) =>
-      !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))
-    );
-
-    // Ordenar por qualidade
-    scored.sort((a, b) => b.quality.total - a.quality.total);
-
-    if (scored.length === 0) continue;
-
-    const best = scored[0];
+    best.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
     const stake = +(input.totalInvestment * layer.stakePercent).toFixed(2);
 
-    // Marcar como usadas
-    best.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
+    bets.push(buildBet(best, stake, layer, i, analysis));
+  }
 
-    const betSelections: BetSelection[] = best.selections.map((s) => ({
-      market: s.market,
-      selection: s.selection,
-      odd: s.odd,
-    }));
+  // Se não gerou o número solicitado, tentar preencher com apostas extras
+  if (bets.length < input.betCount) {
+    const remaining = input.betCount - bets.length;
+    const profileConfig = getProfileOddRange(input.riskProfile);
 
-    bets.push({
-      id: `bet_${i + 1}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      selections: betSelections,
-      totalOdd: best.totalOdd,
-      stake,
-      potentialReturn: +(stake * best.totalOdd).toFixed(2),
-      riskLevel: layer.riskLevel,
-      explanation: generateExplanation(best.selections, analysis.scenario, layer.label, best.quality),
-      layer: layer.label,
-      quality: best.quality,
-    });
+    // Tentar com score mínimo progressivamente mais baixo
+    for (const minScore of [60, 50, 40, 0]) {
+      if (bets.length >= input.betCount) break;
+
+      // Expandir range de odds para encontrar mais combinações
+      const expandedLayer: BankLayer = {
+        label: "Extra",
+        oddMin: profileConfig.oddMin,
+        oddMax: profileConfig.oddMax,
+        maxSelections: profileConfig.maxSelections,
+        stakePercent: 0,
+        riskLevel: profileConfig.riskLevel,
+      };
+
+      const combos = generateCombinations(candidates, expandedLayer.maxSelections, expandedLayer.oddMin, expandedLayer.oddMax);
+      let scored = combos.map((c) => ({
+        ...c,
+        quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario),
+      }));
+
+      // Filtrar por score mínimo
+      if (minScore > 0) {
+        scored = scored.filter((c) => c.quality.total >= minScore);
+      }
+      scored = scored.filter((c) => c.selections.length <= 6 && !hasConflict(c.selections));
+
+      // Filtrar seleções já usadas
+      scored = scored.filter((c) =>
+        !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))
+      );
+
+      scored.sort((a, b) => b.quality.total - a.quality.total);
+
+      // Pegar as melhores combinações restantes
+      for (const combo of scored) {
+        if (bets.length >= input.betCount) break;
+
+        // Verificar novamente se as seleções não foram usadas (podem ter sido adicionadas no loop)
+        if (combo.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))) continue;
+
+        combo.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
+        const stake = 0; // será redistribuído abaixo
+
+        bets.push(buildBet(combo, stake, {
+          ...expandedLayer,
+          label: `Camada ${bets.length + 1}`,
+          riskLevel: (combo.totalOdd >= 10 ? "muito_alto" : combo.totalOdd >= 5 ? "alto" : combo.totalOdd >= 3 ? "medio" : "baixo") as BetRiskLevel,
+        }, bets.length, analysis));
+      }
+    }
+
+    // Redistribuir stakes igualmente entre todas as apostas
+    if (bets.length > 0) {
+      const stakeEach = +(input.totalInvestment / bets.length).toFixed(2);
+      for (const bet of bets) {
+        bet.stake = stakeEach;
+        bet.potentialReturn = +(bet.stake * bet.totalOdd).toFixed(2);
+      }
+    }
   }
 
   // Ajustar stakes para somar exatamente o total investido
