@@ -1,5 +1,11 @@
 import { GameOdds, OddsMarket, SportEvent } from "@/types";
 import { getCached, setCache, TTL } from "@/lib/cache";
+import {
+  getUpcomingGamesAPIFootball,
+  getGameOddsAPIFootball,
+  isAPIFootballAvailable,
+  isAPIFootballEvent,
+} from "./api-football";
 
 const API_KEY = process.env.ODDS_API_KEY || "";
 const BASE_URL = "https://api.the-odds-api.com/v4";
@@ -68,16 +74,8 @@ async function limitConcurrency<T>(tasks: (() => Promise<T>)[], maxConcurrent: n
   return results;
 }
 
-export async function getUpcomingGames(): Promise<SportEvent[]> {
-  if (!API_KEY) return getMockGames();
-
-  // Verificar cache
-  const cached = getCached<SportEvent[]>("games_list");
-  if (cached) return cached;
-
-  const allGames: SportEvent[] = [];
-
-  // Buscar de múltiplos campeonatos com concorrência limitada (6 por vez)
+async function getGamesFromTheOddsAPI(): Promise<SportEvent[]> {
+  const games: SportEvent[] = [];
   const tasks = SOCCER_LEAGUES.map((league) => async () => {
     const url = `${BASE_URL}/sports/${league}/odds/?apiKey=${API_KEY}&regions=eu&oddsFormat=decimal&markets=h2h`;
     const res = await fetch(url, { cache: "no-store" });
@@ -93,11 +91,42 @@ export async function getUpcomingGames(): Promise<SportEvent[]> {
       sportKey: event.sport_key,
     }));
   });
-
   const results = await limitConcurrency(tasks, 6);
-
   for (const result of results) {
     if (result.status === "fulfilled" && Array.isArray(result.value)) {
+      games.push(...result.value);
+    }
+  }
+  return games;
+}
+
+export async function getUpcomingGames(): Promise<SportEvent[]> {
+  const hasOddsAPI = !!API_KEY;
+  const hasAPIFootball = isAPIFootballAvailable();
+
+  // Sem nenhuma API configurada → mock
+  if (!hasOddsAPI && !hasAPIFootball) return getMockGames();
+
+  // Verificar cache
+  const cached = getCached<SportEvent[]>("games_list");
+  if (cached) return cached;
+
+  const allGames: SportEvent[] = [];
+
+  // Buscar de ambos os providers em paralelo
+  const providers: Promise<SportEvent[]>[] = [];
+
+  if (hasAPIFootball) {
+    providers.push(getUpcomingGamesAPIFootball().catch(() => []));
+  }
+
+  if (hasOddsAPI) {
+    providers.push(getGamesFromTheOddsAPI());
+  }
+
+  const results = await Promise.allSettled(providers);
+  for (const result of results) {
+    if (result.status === "fulfilled") {
       allGames.push(...result.value);
     }
   }
@@ -121,9 +150,18 @@ export async function getUpcomingGames(): Promise<SportEvent[]> {
 }
 
 export async function getGameOdds(eventId: string, sportKey?: string): Promise<GameOdds | null> {
-  if (!API_KEY || eventId.startsWith("mock_")) {
+  // Mock events
+  if (eventId.startsWith("mock_")) {
     return getMockOdds(eventId);
   }
+
+  // Rotear para API-Football se o evento veio de lá
+  if (isAPIFootballEvent(eventId)) {
+    return getGameOddsAPIFootball(eventId);
+  }
+
+  // The Odds API
+  if (!API_KEY) return null;
 
   // Verificar cache
   const cacheKey = `odds_${eventId}`;
