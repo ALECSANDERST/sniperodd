@@ -334,7 +334,8 @@ function hasConflict(selections: SelectionCandidate[]): boolean {
 function calculateQualityScore(
   selections: SelectionCandidate[],
   totalOdd: number,
-  scenario: GameScenario
+  scenario: GameScenario,
+  profile?: RiskProfile
 ): QualityScore {
   // Coerência do cenário (0–25)
   const scenarioTags: Record<GameScenario, string[]> = {
@@ -351,15 +352,34 @@ function calculateQualityScore(
   const totalTags = selections.reduce((c, s) => c + s.tags.length, 0);
   const coherence = totalTags > 0 ? Math.min(25, Math.round((matchingTags / totalTags) * 25)) : 10;
 
-  // Número de seleções (0–20) — menos é melhor para consistência
-  const selCountScore = selections.length <= 2 ? 20 : selections.length <= 3 ? 16 : selections.length <= 4 ? 12 : selections.length <= 5 ? 8 : 4;
+  // Número de seleções (0–20) — perfis extremos aceitam mais seleções sem penalização
+  const isHighRiskProfile = profile === "extremo" || profile === "ultra_agressivo" || profile === "muito_agressivo";
+  let selCountScore: number;
+  if (isHighRiskProfile) {
+    selCountScore = selections.length <= 3 ? 20 : selections.length <= 4 ? 18 : selections.length <= 5 ? 16 : 14;
+  } else {
+    selCountScore = selections.length <= 2 ? 20 : selections.length <= 3 ? 16 : selections.length <= 4 ? 12 : selections.length <= 5 ? 8 : 4;
+  }
 
-  // Risco da odd (0–20)
+  // Risco da odd (0–20) — perfis extremos não penalizam odds altas
   let oddRisk = 20;
-  if (totalOdd > 50) oddRisk = 4;
-  else if (totalOdd > 20) oddRisk = 8;
-  else if (totalOdd > 10) oddRisk = 12;
-  else if (totalOdd > 5) oddRisk = 16;
+  if (profile === "extremo") {
+    // Para perfil extremo, odds altas são DESEJÁVEIS — não penalizar
+    if (totalOdd >= 80) oddRisk = 20;
+    else if (totalOdd >= 50) oddRisk = 16;
+    else if (totalOdd >= 20) oddRisk = 12;
+    else oddRisk = 6; // penalizar odds BAIXAS no perfil extremo
+  } else if (profile === "ultra_agressivo") {
+    if (totalOdd >= 20) oddRisk = 18;
+    else if (totalOdd >= 10) oddRisk = 16;
+    else if (totalOdd > 5) oddRisk = 14;
+    else oddRisk = 10;
+  } else {
+    if (totalOdd > 50) oddRisk = 4;
+    else if (totalOdd > 20) oddRisk = 8;
+    else if (totalOdd > 10) oddRisk = 12;
+    else if (totalOdd > 5) oddRisk = 16;
+  }
 
   // Tipo de mercado (0–15) — mercados principais valem mais
   const mainMarkets = ["Resultado (1X2)", "Over/Under", "Ambas Marcam", "Dupla Chance"];
@@ -412,14 +432,14 @@ function getBankDistribution(profile: RiskProfile, betCount: number, totalInvest
       { label: "Muito Agressiva", oddMin: 14.0, oddMax: 20.0, maxSelections: 4, stakePercent: 0.25, riskLevel: "muito_alto" },
     ],
     ultra_agressivo: [
-      { label: "Segura", oddMin: 1.8, oddMax: 3.0, maxSelections: 2, stakePercent: 0.50, riskLevel: "baixo" },
-      { label: "Agressiva", oddMin: 8.0, oddMax: 20.0, maxSelections: 4, stakePercent: 0.30, riskLevel: "alto" },
-      { label: "Ultra", oddMin: 20.0, oddMax: 40.0, maxSelections: 5, stakePercent: 0.20, riskLevel: "extremo" },
+      { label: "Ultra I", oddMin: 20.0, oddMax: 28.0, maxSelections: 5, stakePercent: 0.40, riskLevel: "muito_alto" },
+      { label: "Ultra II", oddMin: 28.0, oddMax: 35.0, maxSelections: 5, stakePercent: 0.35, riskLevel: "extremo" },
+      { label: "Ultra III", oddMin: 35.0, oddMax: 40.0, maxSelections: 5, stakePercent: 0.25, riskLevel: "extremo" },
     ],
     extremo: [
-      { label: "Segura/Moderada", oddMin: 1.8, oddMax: 3.5, maxSelections: 2, stakePercent: 0.70, riskLevel: "baixo" },
-      { label: "Agressiva", oddMin: 8.0, oddMax: 30.0, maxSelections: 4, stakePercent: 0.20, riskLevel: "alto" },
-      { label: "Extrema", oddMin: 80.0, oddMax: 200.0, maxSelections: 6, stakePercent: 0.10, riskLevel: "extremo" },
+      { label: "Extrema I", oddMin: 80.0, oddMax: 120.0, maxSelections: 6, stakePercent: 0.40, riskLevel: "extremo" },
+      { label: "Extrema II", oddMin: 120.0, oddMax: 160.0, maxSelections: 6, stakePercent: 0.35, riskLevel: "extremo" },
+      { label: "Extrema III", oddMin: 160.0, oddMax: 200.0, maxSelections: 6, stakePercent: 0.25, riskLevel: "extremo" },
     ],
   };
 
@@ -621,13 +641,14 @@ function findBestCombo(
   layer: BankLayer,
   usedSelectionKeys: Set<string>,
   analysis: { scenario: GameScenario; confidence: number },
-  minScore: number
+  minScore: number,
+  profile?: RiskProfile
 ) {
   const combos = generateCombinations(candidates, layer.maxSelections, layer.oddMin, layer.oddMax);
 
   let scored = combos.map((c) => ({
     ...c,
-    quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario),
+    quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario, profile),
   }));
 
   // Filtrar por score mínimo e sanidade
@@ -668,8 +689,8 @@ function getProfileOddRange(profile: RiskProfile): { oddMin: number; oddMax: num
     moderado: { oddMin: 1.5, oddMax: 5.0, maxSelections: 3, riskLevel: "medio" },
     agressivo: { oddMin: 2.0, oddMax: 12.0, maxSelections: 3, riskLevel: "alto" },
     muito_agressivo: { oddMin: 2.0, oddMax: 20.0, maxSelections: 4, riskLevel: "alto" },
-    ultra_agressivo: { oddMin: 1.5, oddMax: 40.0, maxSelections: 5, riskLevel: "muito_alto" },
-    extremo: { oddMin: 1.5, oddMax: 200.0, maxSelections: 6, riskLevel: "extremo" },
+    ultra_agressivo: { oddMin: 20.0, oddMax: 40.0, maxSelections: 5, riskLevel: "muito_alto" },
+    extremo: { oddMin: 80.0, oddMax: 200.0, maxSelections: 6, riskLevel: "extremo" },
   };
   return ranges[profile];
 }
@@ -689,7 +710,8 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
   // Gerar uma aposta para cada camada
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
-    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, 70);
+    const minQuality = (input.riskProfile === "extremo" || input.riskProfile === "ultra_agressivo") ? 50 : 70;
+    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, minQuality, input.riskProfile);
     if (!best) continue;
 
     best.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
@@ -720,7 +742,7 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
       const combos = generateCombinations(candidates, expandedLayer.maxSelections, expandedLayer.oddMin, expandedLayer.oddMax);
       let scored = combos.map((c) => ({
         ...c,
-        quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario),
+        quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario, input.riskProfile),
       }));
 
       // Filtrar por score mínimo
@@ -774,21 +796,23 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
     }
   }
 
-  // Validar: apostas acima de 20x não podem ter mais de 20% da banca
-  const highRiskTotal = bets.filter((b) => b.totalOdd >= 20).reduce((s, b) => s + b.stake, 0);
-  const maxHighRisk = input.totalInvestment * 0.20;
-  if (highRiskTotal > maxHighRisk && bets.length > 1) {
-    const excess = highRiskTotal - maxHighRisk;
-    const highRiskBets = bets.filter((b) => b.totalOdd >= 20);
-    const safeBase = bets.find((b) => b.totalOdd < 20);
-    if (highRiskBets.length > 0 && safeBase) {
-      const reduceEach = excess / highRiskBets.length;
-      for (const b of highRiskBets) {
-        b.stake = +(b.stake - reduceEach).toFixed(2);
-        b.potentialReturn = +(b.stake * b.totalOdd).toFixed(2);
+  // Validar: apostas acima de 20x não podem ter mais de 20% da banca (exceto perfis extremos)
+  if (input.riskProfile !== "extremo" && input.riskProfile !== "ultra_agressivo") {
+    const highRiskTotal = bets.filter((b) => b.totalOdd >= 20).reduce((s, b) => s + b.stake, 0);
+    const maxHighRisk = input.totalInvestment * 0.20;
+    if (highRiskTotal > maxHighRisk && bets.length > 1) {
+      const excess = highRiskTotal - maxHighRisk;
+      const highRiskBets = bets.filter((b) => b.totalOdd >= 20);
+      const safeBase = bets.find((b) => b.totalOdd < 20);
+      if (highRiskBets.length > 0 && safeBase) {
+        const reduceEach = excess / highRiskBets.length;
+        for (const b of highRiskBets) {
+          b.stake = +(b.stake - reduceEach).toFixed(2);
+          b.potentialReturn = +(b.stake * b.totalOdd).toFixed(2);
+        }
+        safeBase.stake = +(safeBase.stake + excess).toFixed(2);
+        safeBase.potentialReturn = +(safeBase.stake * safeBase.totalOdd).toFixed(2);
       }
-      safeBase.stake = +(safeBase.stake + excess).toFixed(2);
-      safeBase.potentialReturn = +(safeBase.stake * safeBase.totalOdd).toFixed(2);
     }
   }
 

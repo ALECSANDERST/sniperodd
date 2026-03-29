@@ -53,10 +53,10 @@ export default function GeradorPage() {
       <FadeIn>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+            <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
               Gerador de Apostas
             </h2>
-            <p className="text-sm text-text-muted mt-1">
+            <p className="text-sm text-text-secondary mt-1.5">
               Selecione o jogo, configure e gere apostas inteligentes
             </p>
           </div>
@@ -330,9 +330,27 @@ export default function GeradorPage() {
         <FadeIn>
           <Card accent>
             <CardContent className="py-20 text-center">
-              <Loader2 className="w-8 h-8 text-accent animate-spin mx-auto mb-4" />
-              <h3 className="text-base font-bold text-text-primary mb-1">Analisando cenário...</h3>
-              <p className="text-sm text-text-muted">Calculando correlações e otimizando distribuição</p>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/10 to-teal/5 border border-border flex items-center justify-center mx-auto mb-6 ring-1 ring-accent/10">
+                <Loader2 className="w-7 h-7 text-accent animate-spin" />
+              </div>
+              <h3 className="font-serif text-2xl italic text-text-primary mb-2">Analisando cenário...</h3>
+              <p className="text-sm text-text-muted max-w-md mx-auto leading-relaxed">
+                Calculando correlações entre mercados e otimizando a distribuição de banca
+              </p>
+              <div className="flex items-center justify-center gap-4 mt-6 text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-glow" />
+                  Cenário
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse-glow" style={{ animationDelay: "0.3s" }} />
+                  Correlações
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-info animate-pulse-glow" style={{ animationDelay: "0.6s" }} />
+                  Otimização
+                </div>
+              </div>
             </CardContent>
           </Card>
         </FadeIn>

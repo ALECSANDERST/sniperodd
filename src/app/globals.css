@@ -116,13 +116,14 @@ body::after {
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .card-premium:hover {
   border-color: var(--color-border-hover);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 8px 28px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(228, 186, 96, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
   transform: translateY(-1px);
 }
@@ -217,4 +218,148 @@ input[type="range"]::-webkit-slider-thumb {
 ::selection {
   background: rgba(228, 186, 96, 0.2);
   color: var(--color-text-primary);
+}
+
+/* ═══ FOCUS & ACCESSIBILITY ═══ */
+:focus-visible {
+  outline: 2px solid rgba(228, 186, 96, 0.4);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ═══ REDUCED MOTION ═══ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton {
+    animation: none;
+    background: var(--color-bg-elevated);
+  }
+}
+
+/* ═══ STAT CARD GLOW ═══ */
+.stat-glow-gold {
+  position: relative;
+}
+.stat-glow-gold::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(228, 186, 96, 0.08), transparent 60%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.stat-glow-gold:hover::after {
+  opacity: 1;
+}
+
+/* ═══ DIVIDER GRADIENT ═══ */
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-border-hover) 50%, transparent 100%);
+}
+
+/* ═══ EMPTY STATE ═══ */
+.empty-state-icon {
+  position: relative;
+}
+.empty-state-icon::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(228, 186, 96, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ═══ TEXT GRADIENT ═══ */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--color-accent-strong), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══ ACTIVE NAV PILL ═══ */
+.nav-active-glow {
+  box-shadow: 0 0 16px -4px rgba(228, 186, 96, 0.2),
+              inset 0 1px 0 rgba(228, 186, 96, 0.06);
+}
+
+/* ═══ BET CARD RIBBON ═══ */
+.bet-ribbon {
+  position: relative;
+  overflow: hidden;
+}
+.bet-ribbon::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-accent) 30%, var(--color-teal) 70%, transparent);
+  opacity: 0.5;
+}
+
+/* ═══ SUBTLE DOT GRID ═══ */
+.dot-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--color-border) 0.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* ═══ CARD HOVER LIFT ═══ */
+.card-hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(228, 186, 96, 0.05);
+}
+
+/* ═══ GLOW RING ON HOVER ═══ */
+.hover-glow-ring {
+  position: relative;
+}
+.hover-glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(228, 186, 96, 0.06), rgba(45, 212, 191, 0.04), transparent 60%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.hover-glow-ring:hover::before {
+  opacity: 1;
+}
+
+/* ═══ INTERACTIVE CURSOR ═══ */
+.interactive {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ═══ LABEL STYLE ═══ */
+.label-micro {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-text-muted);
+}
+
+/* ═══ SCROLL FADE EDGES ═══ */
+.scroll-fade-y {
+  mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);
 }

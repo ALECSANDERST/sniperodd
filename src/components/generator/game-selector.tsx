@@ -70,7 +70,7 @@ export default function GameSelector({ onSelect, selected }: Props) {
           </div>
         </FadeIn>
       ) : (
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[400px] scroll-fade-y">
           <div className="space-y-5 pr-3">
             {Object.entries(grouped).map(([sport, sportGames], groupIdx) => (
               <motion.div
@@ -144,9 +144,12 @@ export default function GameSelector({ onSelect, selected }: Props) {
             ))}
             {filtered.length === 0 && (
               <FadeIn>
-                <div className="text-center py-12 text-text-muted">
-                  <Search className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm">Nenhum jogo encontrado</p>
+                <div className="text-center py-12">
+                  <div className="empty-state-icon inline-block mb-4">
+                    <Search className="w-10 h-10 text-text-muted/20" />
+                  </div>
+                  <p className="text-sm font-medium text-text-secondary">Nenhum jogo encontrado</p>
+                  <p className="text-xs text-text-muted mt-1">Tente buscar por outro time ou campeonato</p>
                 </div>
               </FadeIn>
             )}

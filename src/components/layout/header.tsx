@@ -66,7 +66,8 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-card transition-colors"
+            aria-label="Abrir menu"
+            className="lg:hidden p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-card cursor-pointer transition-colors duration-200"
           >
             <Menu className="w-5 h-5" />
           </motion.button>
@@ -180,7 +181,8 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setMobileOpen(false)}
-                  className="p-1.5 rounded-lg text-text-muted hover:text-text-primary"
+                  aria-label="Fechar menu"
+                  className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-card cursor-pointer transition-colors duration-200"
                 >
                   <X className="w-4 h-4" />
                 </motion.button>

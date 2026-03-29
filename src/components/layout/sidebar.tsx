@@ -83,9 +83,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative cursor-pointer",
                   isActive
-                    ? "bg-accent-muted text-accent shadow-[0_0_20px_-6px_rgba(228,186,96,0.1)]"
+                    ? "bg-accent-muted text-accent nav-active-glow"
                     : "text-text-muted hover:text-text-primary hover:bg-bg-card",
                   collapsed && "justify-center px-0"
                 )}
@@ -116,9 +116,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Footer */}
       <div className="p-3 border-t border-border relative">
         {!collapsed && (
-          <div className="px-3 mb-3">
+          <div className="px-3 mb-3 flex items-center justify-between">
             <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
               Motor v2.0
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-risk-low animate-pulse-glow" />
+              <span className="text-[8px] font-bold text-risk-low uppercase tracking-wider">Online</span>
             </div>
           </div>
         )}
@@ -126,7 +130,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onToggle}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-text-muted hover:text-text-secondary hover:bg-bg-card transition-all text-xs"
+          aria-label={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-text-muted hover:text-text-secondary hover:bg-bg-card cursor-pointer transition-all duration-200 text-xs"
         >
           {collapsed ? (
             <ChevronRight className="w-3.5 h-3.5" />

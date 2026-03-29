@@ -36,17 +36,21 @@ export default function HistoricoPage() {
     return (
       <div className="space-y-8">
         <FadeIn>
-          <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+          <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
             Histórico
           </h2>
-          <p className="text-sm text-text-muted mt-1">Registro de todas as apostas geradas</p>
+          <p className="text-sm text-text-secondary mt-1.5">Registro de todas as apostas geradas</p>
         </FadeIn>
         <FadeIn delay={0.1}>
           <Card accent>
             <CardContent className="py-20 text-center">
-              <History className="w-12 h-12 text-text-muted/15 mx-auto mb-4" />
-              <h3 className="text-base font-bold text-text-primary mb-2">Nenhuma geração registrada</h3>
-              <p className="text-sm text-text-muted mb-6">Seu histórico aparecerá aqui após gerar apostas.</p>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/10 to-accent/3 border border-border flex items-center justify-center mx-auto mb-6 ring-1 ring-accent/10">
+                <History className="w-7 h-7 text-accent/40" />
+              </div>
+              <h3 className="font-serif text-2xl italic text-text-primary mb-2">Nenhuma geração registrada</h3>
+              <p className="text-sm text-text-muted max-w-md mx-auto mb-8 leading-relaxed">
+                Seu histórico aparecerá aqui após gerar apostas com o motor inteligente.
+              </p>
               <Link href="/gerador">
                 <Button className="gap-1.5">
                   <Crosshair className="w-4 h-4" />
@@ -68,10 +72,10 @@ export default function HistoricoPage() {
       <FadeIn>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+            <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
               Histórico
             </h2>
-            <p className="text-sm text-text-muted mt-1">
+            <p className="text-sm text-text-secondary mt-1.5">
               {history.length} geração{history.length !== 1 ? "ões" : ""} registrada{history.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -88,7 +92,7 @@ export default function HistoricoPage() {
           <button
             onClick={() => setFilterProfile(null)}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.05em] transition-all",
+              "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.05em] cursor-pointer transition-all duration-200",
               !filterProfile
                 ? "bg-accent-muted text-accent border border-border-accent"
                 : "bg-bg-card text-text-muted border border-border hover:text-text-secondary"
@@ -101,7 +105,7 @@ export default function HistoricoPage() {
               key={p}
               onClick={() => setFilterProfile(filterProfile === p ? null : p)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.05em] transition-all",
+                "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.05em] cursor-pointer transition-all duration-200",
                 filterProfile === p
                   ? "bg-accent-muted text-accent border border-border-accent"
                   : "bg-bg-card text-text-muted border border-border hover:text-text-secondary"
@@ -121,7 +125,7 @@ export default function HistoricoPage() {
 
           return (
             <StaggerItem key={entry.id}>
-              <Card accent>
+              <Card accent className="hover-glow-ring">
                 <div className="p-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : entry.id)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">

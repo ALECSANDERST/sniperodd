@@ -93,7 +93,7 @@ export default function RiskProfileSelector({ selected, onSelect }: Props) {
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               className={cn(
-                "relative p-3 rounded-xl border text-center transition-colors duration-200",
+                "relative p-3 rounded-xl border text-center cursor-pointer transition-all duration-200",
                 isActive
                   ? cn(p.activeBg, "ring-1", p.activeRing)
                   : "border-border bg-bg-card hover:bg-bg-card-hover hover:border-border-hover"

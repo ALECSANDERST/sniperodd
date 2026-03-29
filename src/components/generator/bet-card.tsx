@@ -50,8 +50,8 @@ export default function BetCard({
 
   return (
     <Card accent className={cn(
-      "transition-all duration-300",
-      bet.fixed && "ring-1 ring-accent/20 border-accent/20 shadow-[0_0_24px_-6px_rgba(228,186,96,0.1)]"
+      "bet-ribbon transition-all duration-200",
+      bet.fixed && "ring-1 ring-accent/20 border-accent/20 glow-accent"
     )}>
       <div className="p-5">
         {/* Header */}
@@ -104,6 +104,7 @@ export default function BetCard({
         </div>
 
         {/* Financial summary */}
+        <div className="divider-gradient mb-4" />
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="text-center p-3 bg-bg-elevated rounded-xl border border-border/50">
             <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-text-muted mb-1">Odd Total</div>
@@ -148,7 +149,7 @@ export default function BetCard({
           whileHover={{ x: 2 }}
           transition={{ type: "spring", stiffness: 400, damping: 20 }}
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted hover:text-text-secondary transition-colors mb-3"
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted hover:text-text-secondary cursor-pointer transition-colors duration-200 mb-3"
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           Score: {bet.quality.total}/100
@@ -235,6 +236,7 @@ export default function BetCard({
               size="icon"
               onClick={onRegenerate}
               className="shrink-0"
+              aria-label="Regenerar aposta"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </Button>

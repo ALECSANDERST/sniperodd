@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { RiskProfile, StakeMode } from "@/types";
-import { DollarSign, Target, Zap, Settings2 } from "lucide-react";
+import { DollarSign, Target, Zap, Settings2, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RiskProfileSelector from "./risk-profile-selector";
 
@@ -50,7 +50,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               onClick={() => onUpdate({ totalInvestment: v })}
               className={cn(
-                "flex-1 py-1.5 rounded-lg text-[10px] font-bold tabular-nums transition-colors duration-200",
+                "flex-1 py-1.5 rounded-lg text-[10px] font-bold tabular-nums cursor-pointer transition-colors duration-200",
                 config.totalInvestment === v
                   ? "bg-accent-muted text-accent border border-border-accent shadow-[0_0_12px_-3px_rgba(228,186,96,0.15)]"
                   : "bg-bg-elevated text-text-muted hover:text-text-secondary border border-transparent"
@@ -77,7 +77,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               onClick={() => onUpdate({ betCount: n })}
               className={cn(
-                "flex-1 py-3 rounded-xl border font-extrabold text-sm transition-colors duration-200",
+                "flex-1 py-3 rounded-xl border font-extrabold text-sm cursor-pointer transition-colors duration-200",
                 config.betCount === n
                   ? "border-accent/30 bg-accent-muted text-accent ring-1 ring-accent/10 shadow-[0_0_16px_-4px_rgba(228,186,96,0.15)]"
                   : "border-border bg-bg-card text-text-secondary hover:bg-bg-card-hover hover:border-border-hover"
@@ -92,6 +92,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
       {/* Risk profile */}
       <div>
         <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
+          <ShieldAlert className="w-3.5 h-3.5 text-accent" />
           Perfil de Risco
         </label>
         <RiskProfileSelector selected={config.riskProfile} onSelect={onSetRiskProfile} />
@@ -100,6 +101,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
       {/* Stake mode */}
       <div>
         <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
+          <Settings2 className="w-3.5 h-3.5 text-accent" />
           Modo de Stake
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -114,7 +116,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               onClick={() => onUpdate({ stakeMode: m.value })}
               className={cn(
-                "p-3 rounded-xl border flex items-center gap-3 transition-colors duration-200 text-left",
+                "p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-colors duration-200 text-left",
                 config.stakeMode === m.value
                   ? "border-accent/30 bg-accent-muted ring-1 ring-accent/10 shadow-[0_0_16px_-4px_rgba(228,186,96,0.15)]"
                   : "border-border bg-bg-card hover:bg-bg-card-hover hover:border-border-hover"

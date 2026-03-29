@@ -48,17 +48,21 @@ export default function ExposicaoPage() {
     return (
       <div className="space-y-8">
         <FadeIn>
-          <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+          <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
             Exposição & Risco
           </h2>
-          <p className="text-sm text-text-muted mt-1">Análise detalhada de risco das suas apostas</p>
+          <p className="text-sm text-text-secondary mt-1.5">Análise detalhada de risco das suas apostas</p>
         </FadeIn>
         <FadeIn delay={0.1}>
           <Card accent>
             <CardContent className="py-20 text-center">
-              <ShieldAlert className="w-12 h-12 text-text-muted/15 mx-auto mb-4" />
-              <h3 className="text-base font-bold text-text-primary mb-2">Nenhuma aposta gerada</h3>
-              <p className="text-sm text-text-muted mb-6">Gere apostas primeiro para ver a análise completa.</p>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-warning/10 to-warning/3 border border-border flex items-center justify-center mx-auto mb-6 ring-1 ring-warning/10">
+                <ShieldAlert className="w-7 h-7 text-warning/40" />
+              </div>
+              <h3 className="font-serif text-2xl italic text-text-primary mb-2">Nenhuma aposta gerada</h3>
+              <p className="text-sm text-text-muted max-w-md mx-auto mb-8 leading-relaxed">
+                Gere apostas primeiro para ver a análise completa de risco e exposição.
+              </p>
               <Link href="/gerador">
                 <Button className="gap-1.5">
                   <Crosshair className="w-4 h-4" />
@@ -115,10 +119,10 @@ export default function ExposicaoPage() {
   return (
     <div className="space-y-8">
       <FadeIn>
-        <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+        <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
           Exposição & Risco
         </h2>
-        <p className="text-sm text-text-muted mt-1">Análise detalhada do risco agregado</p>
+        <p className="text-sm text-text-secondary mt-1.5">Análise detalhada do risco agregado</p>
       </FadeIn>
 
       {/* Metrics */}
@@ -127,7 +131,7 @@ export default function ExposicaoPage() {
           const Icon = m.icon;
           return (
             <StaggerItem key={m.label}>
-              <Card accent>
+              <Card accent className="card-hover-lift">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted">{m.label}</span>

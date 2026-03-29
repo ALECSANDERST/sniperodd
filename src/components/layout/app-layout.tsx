@@ -34,6 +34,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             border: "1px solid var(--color-border)",
             color: "var(--color-text-primary)",
             fontFamily: "Plus Jakarta Sans, system-ui, sans-serif",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(228,186,96,0.05)",
+            borderRadius: "16px",
           },
         }}
       />

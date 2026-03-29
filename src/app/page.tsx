@@ -71,10 +71,10 @@ export default function Dashboard() {
       <FadeIn>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
+            <h2 className="font-serif text-3xl italic tracking-tight text-gradient-gold">
               Visão Geral
             </h2>
-            <p className="text-sm text-text-muted mt-1">
+            <p className="text-sm text-text-secondary mt-1.5">
               Resumo estratégico das suas apostas
             </p>
           </div>
@@ -94,14 +94,14 @@ export default function Dashboard() {
           const Icon = stat.icon;
           return (
             <StaggerItem key={stat.label}>
-              <Card accent>
+              <Card accent className="stat-glow-gold card-hover-lift">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted">
                       {stat.label}
                     </span>
-                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${stat.bg} flex items-center justify-center ring-1 ring-white/5`}>
-                      <Icon className={`w-3.5 h-3.5 ${stat.color}`} />
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.bg} flex items-center justify-center ring-1 ring-white/5`}>
+                      <Icon className={`w-4 h-4 ${stat.color}`} />
                     </div>
                   </div>
                   <div className={`text-2xl font-extrabold tabular-nums ${stat.color}`}>
@@ -161,10 +161,13 @@ export default function Dashboard() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[240px] flex items-center justify-center">
+                <div className="h-[240px] flex items-center justify-center dot-grid rounded-xl">
                   <div className="text-center">
-                    <BarChart3 className="w-10 h-10 text-text-muted/15 mx-auto mb-3" />
-                    <p className="text-sm text-text-muted">Gere apostas para ver o gráfico</p>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/8 to-accent/2 border border-border/50 flex items-center justify-center mx-auto mb-4 ring-1 ring-accent/5">
+                      <BarChart3 className="w-5 h-5 text-text-muted/30" />
+                    </div>
+                    <p className="text-sm font-medium text-text-secondary">Nenhuma geração ainda</p>
+                    <p className="text-xs text-text-muted mt-1">Gere apostas para ver o gráfico de retorno</p>
                   </div>
                 </div>
               )}
@@ -209,10 +212,13 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="h-[240px] flex items-center justify-center">
+                <div className="h-[240px] flex items-center justify-center dot-grid rounded-xl">
                   <div className="text-center">
-                    <PieChart className="w-10 h-10 text-text-muted/15 mx-auto mb-3" />
-                    <p className="text-sm text-text-muted">Sem dados ainda</p>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/8 to-accent/2 border border-border/50 flex items-center justify-center mx-auto mb-4 ring-1 ring-accent/5">
+                      <PieChart className="w-5 h-5 text-text-muted/30" />
+                    </div>
+                    <p className="text-sm font-medium text-text-secondary">Sem alocações</p>
+                    <p className="text-xs text-text-muted mt-1">Distribuição aparece após gerar</p>
                   </div>
                 </div>
               )}
@@ -265,10 +271,13 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="py-10 text-center">
-                  <Brain className="w-10 h-10 text-text-muted/15 mx-auto mb-3" />
-                  <p className="text-sm text-text-muted">Nenhuma geração ativa</p>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/8 to-accent/2 border border-border/50 flex items-center justify-center mx-auto mb-4 ring-1 ring-accent/5">
+                    <Brain className="w-5 h-5 text-text-muted/30" />
+                  </div>
+                  <p className="text-sm font-medium text-text-secondary">Nenhuma geração ativa</p>
+                  <p className="text-xs text-text-muted mt-1">Use o motor inteligente para gerar apostas</p>
                   <Link href="/gerador">
-                    <Button variant="secondary" size="sm" className="mt-4 gap-1.5">
+                    <Button variant="secondary" size="sm" className="mt-5 gap-1.5">
                       <Crosshair className="w-3.5 h-3.5" />
                       Ir para o Gerador
                     </Button>
@@ -325,8 +334,11 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="py-10 text-center">
-                  <ShieldAlert className="w-10 h-10 text-text-muted/15 mx-auto mb-3" />
-                  <p className="text-sm text-text-muted">Gere apostas para ver a exposição</p>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning/8 to-warning/2 border border-border/50 flex items-center justify-center mx-auto mb-4 ring-1 ring-warning/5">
+                    <ShieldAlert className="w-5 h-5 text-text-muted/30" />
+                  </div>
+                  <p className="text-sm font-medium text-text-secondary">Sem dados de exposição</p>
+                  <p className="text-xs text-text-muted mt-1">Gere apostas para analisar o risco</p>
                 </div>
               )}
             </CardContent>
@@ -354,7 +366,7 @@ export default function Dashboard() {
                 {history.slice(0, 5).map((h) => (
                   <div
                     key={h.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-bg-elevated border border-border/50 hover:border-border-hover transition-all"
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-bg-elevated border border-border/50 hover:border-border-hover hover:bg-bg-card-hover cursor-pointer transition-all duration-200"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/12 to-accent/4 flex items-center justify-center ring-1 ring-accent/10">

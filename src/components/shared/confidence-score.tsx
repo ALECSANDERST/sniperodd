@@ -26,6 +26,15 @@ export function ConfidenceScore({
           ? "text-warning"
           : "text-danger";
 
+  const glowColor =
+    percent >= 85
+      ? "drop-shadow-[0_0_6px_rgba(52,211,153,0.3)]"
+      : percent >= 70
+        ? "drop-shadow-[0_0_6px_rgba(228,186,96,0.3)]"
+        : percent >= 50
+          ? "drop-shadow-[0_0_6px_rgba(251,191,36,0.3)]"
+          : "drop-shadow-[0_0_6px_rgba(248,113,113,0.3)]";
+
   const sizeClasses = {
     sm: "w-9 h-9 text-[10px]",
     md: "w-12 h-12 text-xs",
@@ -40,8 +49,8 @@ export function ConfidenceScore({
   const center = viewBox / 2;
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={cn("relative flex items-center justify-center", sizeClasses[size])}>
+    <div className="flex flex-col items-center gap-1.5">
+      <div className={cn("relative flex items-center justify-center", sizeClasses[size], glowColor)}>
         <svg className="absolute inset-0 -rotate-90" viewBox={`0 0 ${viewBox} ${viewBox}`}>
           <circle
             cx={center}
