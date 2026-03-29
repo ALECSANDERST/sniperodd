@@ -113,6 +113,34 @@ export interface SportEvent {
   sportKey: string;
 }
 
+// ===== LINK ANALYSIS =====
+
+export interface ParsedLink {
+  source: string;
+  homeTeam: string | null;
+  awayTeam: string | null;
+  eventSlug: string;
+  sportKey: string | null;
+  rawUrl: string;
+}
+
+export interface LinkMatchResult {
+  event: SportEvent;
+  confidence: number;
+  matchedBy: "exact" | "fuzzy" | "partial";
+}
+
+export interface LinkAnalysisState {
+  url: string;
+  parsed: ParsedLink | null;
+  matchedEvent: SportEvent | null;
+  odds: GameOdds | null;
+  result: GenerationResult | null;
+  status: "idle" | "parsing" | "matched" | "analyzing" | "done" | "error";
+  error: string | null;
+  suggestions: LinkMatchResult[];
+}
+
 export const RISK_PROFILE_CONFIG: Record<
   RiskProfile,
   { label: string; oddMin: number; oddMax: number; maxSelections: number; description: string }

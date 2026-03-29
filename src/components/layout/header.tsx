@@ -8,6 +8,7 @@ import {
   Menu,
   X,
   LayoutDashboard,
+  Link2,
   ShieldAlert,
   History,
   Brain,
@@ -20,6 +21,7 @@ import { useState } from "react";
 const mobileNav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Gerador", href: "/gerador", icon: Crosshair },
+  { label: "Análise Link", href: "/analise", icon: Link2 },
   { label: "Exposição", href: "/exposicao", icon: ShieldAlert },
   { label: "Histórico", href: "/historico", icon: History },
 ];
@@ -47,6 +49,7 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
   const pageTitle: Record<string, string> = {
     "/": "Dashboard",
     "/gerador": "Gerador de Apostas",
+    "/analise": "Análise por Link",
     "/exposicao": "Exposição & Risco",
     "/historico": "Histórico",
   };

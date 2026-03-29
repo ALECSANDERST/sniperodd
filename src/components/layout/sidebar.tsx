@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Crosshair,
+  Link2,
   ShieldAlert,
   History,
   ChevronLeft,
@@ -17,6 +18,7 @@ import {
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Gerador", href: "/gerador", icon: Crosshair, highlight: true },
+  { label: "Análise Link", href: "/analise", icon: Link2, highlight: true },
   { label: "Exposição", href: "/exposicao", icon: ShieldAlert },
   { label: "Histórico", href: "/historico", icon: History },
 ];
