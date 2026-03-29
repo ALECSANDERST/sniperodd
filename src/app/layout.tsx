@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppLayout from "@/components/layout/app-layout";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "SniperOdd — Gerador de Bilhetes Inteligentes",
+  title: "SniperOdd PRO — Plataforma de Apostas Inteligentes",
   description:
-    "Gere apostas estratégicas em futebol com inteligência profissional. Análise de cenários, distribuição de banca e gestão de risco.",
+    "Plataforma premium de análise e montagem de apostas para futebol. Análise de cenários, distribuição de banca e gestão de risco.",
 };
 
 export default function RootLayout({
@@ -20,7 +22,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <TooltipProvider delayDuration={200}>
+          <AppLayout>{children}</AppLayout>
+        </TooltipProvider>
+      </body>
     </html>
   );
 }
