@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 
 interface ConfidenceScoreProps {
   score: number;
@@ -20,31 +21,22 @@ export function ConfidenceScore({
     percent >= 85
       ? "text-risk-low"
       : percent >= 70
-        ? "text-info"
+        ? "text-accent"
         : percent >= 50
           ? "text-warning"
           : "text-danger";
 
-  const bgColor =
-    percent >= 85
-      ? "bg-risk-low"
-      : percent >= 70
-        ? "bg-info"
-        : percent >= 50
-          ? "bg-warning"
-          : "bg-danger";
-
   const sizeClasses = {
-    sm: "w-8 h-8 text-[10px]",
-    md: "w-11 h-11 text-xs",
-    lg: "w-14 h-14 text-sm",
+    sm: "w-9 h-9 text-[10px]",
+    md: "w-12 h-12 text-xs",
+    lg: "w-16 h-16 text-sm",
   };
 
-  const strokeWidth = size === "sm" ? 3 : size === "md" ? 2.5 : 2;
-  const radius = size === "sm" ? 13 : size === "md" ? 18 : 23;
+  const strokeWidth = size === "sm" ? 2.5 : size === "md" ? 2 : 1.8;
+  const radius = size === "sm" ? 14 : size === "md" ? 20 : 26;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percent / 100) * circumference;
-  const viewBox = size === "sm" ? 30 : size === "md" ? 40 : 50;
+  const viewBox = size === "sm" ? 34 : size === "md" ? 46 : 58;
   const center = viewBox / 2;
 
   return (
@@ -59,7 +51,7 @@ export function ConfidenceScore({
             stroke="var(--color-bg-elevated)"
             strokeWidth={strokeWidth}
           />
-          <circle
+          <motion.circle
             cx={center}
             cy={center}
             r={radius}
@@ -67,15 +59,17 @@ export function ConfidenceScore({
             stroke="currentColor"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
-            strokeDashoffset={offset}
             strokeLinecap="round"
-            className={cn("transition-all duration-700 ease-out", color)}
+            className={cn("transition-colors", color)}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
           />
         </svg>
-        <span className={cn("font-bold relative z-10", color)}>{score}</span>
+        <span className={cn("font-extrabold relative z-10 tabular-nums", color)}>{score}</span>
       </div>
       {showLabel && (
-        <span className="text-[9px] font-medium text-text-muted uppercase tracking-wider">
+        <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
           {percent >= 85 ? "Excelente" : percent >= 70 ? "Boa" : percent >= 50 ? "Regular" : "Fraca"}
         </span>
       )}

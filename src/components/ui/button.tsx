@@ -4,26 +4,26 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-35 cursor-pointer active:scale-[0.97]",
   {
     variants: {
       variant: {
         default:
-          "bg-accent text-bg-primary hover:bg-accent-hover shadow-[0_0_20px_rgba(16,185,129,0.15)]",
+          "bg-gradient-to-b from-accent to-accent-dim text-text-inverse rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_16px_rgba(228,186,96,0.12)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_24px_rgba(228,186,96,0.2)] hover:from-accent-hover hover:to-accent hover:scale-[1.02]",
         secondary:
-          "bg-bg-card border border-border text-text-secondary hover:bg-bg-card-hover hover:text-text-primary hover:border-border-hover",
+          "bg-bg-card border border-border text-text-secondary rounded-xl hover:bg-bg-card-hover hover:text-text-primary hover:border-border-hover hover:scale-[1.01]",
         ghost:
-          "text-text-secondary hover:text-text-primary hover:bg-bg-card",
+          "text-text-secondary rounded-lg hover:text-text-primary hover:bg-bg-card",
         outline:
-          "border border-border text-text-secondary hover:border-accent hover:text-accent bg-transparent",
+          "border border-border-accent text-accent rounded-xl bg-accent-muted hover:bg-accent-glow hover:border-accent/40",
         danger:
-          "bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20",
+          "bg-danger/8 text-danger border border-danger/15 rounded-xl hover:bg-danger/15",
       },
       size: {
         default: "h-10 px-5 py-2",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-12 px-8 text-base",
-        icon: "h-9 w-9",
+        sm: "h-8 px-3.5 text-xs",
+        lg: "h-12 px-8 text-base font-bold",
+        icon: "h-9 w-9 rounded-lg",
       },
     },
     defaultVariants: {

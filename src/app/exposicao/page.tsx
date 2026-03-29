@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RiskBadge } from "@/components/shared/risk-badge";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/shared/animate";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -13,12 +14,12 @@ import {
   AlertTriangle,
   CheckCircle,
   PieChart,
-  TrendingUp,
   BarChart3,
   Crosshair,
   ArrowRight,
   Target,
   Zap,
+  DollarSign,
 } from "lucide-react";
 import {
   BarChart,
@@ -32,81 +33,50 @@ import {
   PolarGrid,
   PolarAngleAxis,
   Radar,
-  PieChart as RPieChart,
-  Pie,
 } from "recharts";
 
+const COLORS = ["#e4ba60", "#60a5fa", "#2dd4bf", "#f87171", "#f472b6", "#a78bfa"];
 const RISK_COLORS: Record<string, string> = {
-  baixo: "#10b981",
-  medio: "#3b82f6",
-  alto: "#f59e0b",
-  muito_alto: "#ef4444",
-  extremo: "#ec4899",
+  baixo: "#34d399", medio: "#60a5fa", alto: "#fbbf24", muito_alto: "#f87171", extremo: "#f472b6",
 };
 
-const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6"];
-
 export default function ExposicaoPage() {
-  const { result, config } = useBettingStore();
+  const { result } = useBettingStore();
   const exposure = result?.exposure;
 
   if (!result || !exposure) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-warning" />
+      <div className="space-y-8">
+        <FadeIn>
+          <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
             Exposição & Risco
           </h2>
-          <p className="text-sm text-text-muted mt-0.5">
-            Análise detalhada de risco das suas apostas
-          </p>
-        </div>
-        <Card>
-          <CardContent className="py-16 text-center">
-            <ShieldAlert className="w-12 h-12 text-text-muted/30 mx-auto mb-4" />
-            <h3 className="text-base font-bold text-text-primary mb-2">
-              Nenhuma aposta gerada
-            </h3>
-            <p className="text-sm text-text-muted mb-4">
-              Gere apostas primeiro para ver a análise de risco completa.
-            </p>
-            <Link href="/gerador">
-              <Button className="gap-1.5">
-                <Crosshair className="w-4 h-4" />
-                Ir para o Gerador
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+          <p className="text-sm text-text-muted mt-1">Análise detalhada de risco das suas apostas</p>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <Card accent>
+            <CardContent className="py-20 text-center">
+              <ShieldAlert className="w-12 h-12 text-text-muted/15 mx-auto mb-4" />
+              <h3 className="text-base font-bold text-text-primary mb-2">Nenhuma aposta gerada</h3>
+              <p className="text-sm text-text-muted mb-6">Gere apostas primeiro para ver a análise completa.</p>
+              <Link href="/gerador">
+                <Button className="gap-1.5">
+                  <Crosshair className="w-4 h-4" />
+                  Ir para o Gerador
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </FadeIn>
       </div>
     );
   }
 
-  // Build chart data
   const distData = exposure.distributionByType.map((d, i) => ({
-    name: d.label,
-    value: d.percent,
-    amount: d.amount,
-    fill: COLORS[i % COLORS.length],
+    name: d.label, value: d.percent, amount: d.amount, fill: COLORS[i % COLORS.length],
   }));
 
-  const betsByRisk = result.bets.reduce(
-    (acc, b) => {
-      acc[b.riskLevel] = (acc[b.riskLevel] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const riskDistData = Object.entries(betsByRisk).map(([level, count]) => ({
-    name: level === "baixo" ? "Baixo" : level === "medio" ? "Médio" : level === "alto" ? "Alto" : level === "muito_alto" ? "Muito Alto" : "Extremo",
-    value: count,
-    fill: RISK_COLORS[level] || "#3b82f6",
-  }));
-
-  // Radar data for bet quality dimensions
   const avgDimensions = result.bets.length > 0
     ? {
         coherence: Math.round(result.bets.reduce((s, b) => s + b.quality.coherence, 0) / result.bets.length),
@@ -117,376 +87,209 @@ export default function ExposicaoPage() {
       }
     : null;
 
-  const radarData = avgDimensions
-    ? [
-        { subject: "Coerência", value: (avgDimensions.coherence / 25) * 100, fullMark: 100 },
-        { subject: "Seleções", value: (avgDimensions.selections / 20) * 100, fullMark: 100 },
-        { subject: "Risco Odd", value: (avgDimensions.oddRisk / 20) * 100, fullMark: 100 },
-        { subject: "Mercado", value: (avgDimensions.marketType / 15) * 100, fullMark: 100 },
-        { subject: "Correlação", value: (avgDimensions.correlation / 20) * 100, fullMark: 100 },
-      ]
-    : [];
+  const radarData = avgDimensions ? [
+    { subject: "Coerência", value: (avgDimensions.coherence / 25) * 100 },
+    { subject: "Seleções", value: (avgDimensions.selections / 20) * 100 },
+    { subject: "Risco Odd", value: (avgDimensions.oddRisk / 20) * 100 },
+    { subject: "Mercado", value: (avgDimensions.marketType / 15) * 100 },
+    { subject: "Correlação", value: (avgDimensions.correlation / 20) * 100 },
+  ] : [];
 
-  // Market concentration
-  const marketConcentration = result.bets.reduce(
-    (acc, b) => {
-      b.selections.forEach((s) => {
-        acc[s.market] = (acc[s.market] || 0) + 1;
-      });
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const marketConcentration = result.bets.reduce((acc, b) => {
+    b.selections.forEach((s) => { acc[s.market] = (acc[s.market] || 0) + 1; });
+    return acc;
+  }, {} as Record<string, number>);
 
   const totalSelections = result.bets.reduce((s, b) => s + b.selections.length, 0);
   const marketData = Object.entries(marketConcentration)
-    .map(([market, count]) => ({
-      market,
-      count,
-      percent: Math.round((count / totalSelections) * 100),
-    }))
+    .map(([market, count]) => ({ market, count, percent: Math.round((count / totalSelections) * 100) }))
     .sort((a, b) => b.count - a.count);
 
+  const metrics = [
+    { label: "Banca Exposta", value: `${exposure.exposedPercent}%`, icon: DollarSign, color: "text-warning", bg: "from-warning/12 to-warning/4" },
+    { label: "Risco", value: null, badge: true, icon: ShieldAlert, color: "text-danger", bg: "from-danger/12 to-danger/4" },
+    { label: "Cenário", value: `${result.scenarioConfidence}%`, icon: Brain, color: "text-accent", bg: "from-accent/12 to-accent/4" },
+    { label: "High Risk", value: `${exposure.highRiskPercent}%`, icon: Zap, color: exposure.highRiskPercent > 20 ? "text-danger" : "text-warning", bg: exposure.highRiskPercent > 20 ? "from-danger/12 to-danger/4" : "from-warning/12 to-warning/4" },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5 text-warning" />
+    <div className="space-y-8">
+      <FadeIn>
+        <h2 className="font-serif text-3xl italic text-text-primary tracking-tight">
           Exposição & Risco
         </h2>
-        <p className="text-sm text-text-muted mt-0.5">
-          Análise detalhada do risco agregado
-        </p>
-      </div>
+        <p className="text-sm text-text-muted mt-1">Análise detalhada do risco agregado</p>
+      </FadeIn>
 
-      {/* Key metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
-                Banca Exposta
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-warning" />
-              </div>
-            </div>
-            <div className="text-xl font-bold text-text-primary tabular-nums">
-              {exposure.exposedPercent}%
-            </div>
-            <Progress
-              value={Math.min(exposure.exposedPercent, 100)}
-              className="mt-2 h-1.5"
-              indicatorClassName={
-                exposure.exposedPercent > 80 ? "bg-danger" : exposure.exposedPercent > 50 ? "bg-warning" : "bg-accent"
-              }
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
-                Risco Agregado
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center">
-                <ShieldAlert className="w-4 h-4 text-danger" />
-              </div>
-            </div>
-            <div className="mt-1">
-              <RiskBadge level={exposure.aggregateRisk} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
-                Cenário
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                <Brain className="w-4 h-4 text-accent" />
-              </div>
-            </div>
-            <div className="text-sm font-bold text-accent">
-              {result.scenarioConfidence}%
-            </div>
-            <div className="text-[10px] text-text-muted mt-0.5">confiança</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
-                High Risk
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-risk-extreme/10 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-risk-extreme" />
-              </div>
-            </div>
-            <div className={`text-xl font-bold tabular-nums ${exposure.highRiskPercent > 20 ? "text-danger" : "text-warning"}`}>
-              {exposure.highRiskPercent}%
-            </div>
-            <div className="text-[10px] text-text-muted mt-0.5">odds 20x+</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Metrics */}
+      <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((m) => {
+          const Icon = m.icon;
+          return (
+            <StaggerItem key={m.label}>
+              <Card accent>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted">{m.label}</span>
+                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${m.bg} flex items-center justify-center ring-1 ring-white/5`}>
+                      <Icon className={`w-3.5 h-3.5 ${m.color}`} />
+                    </div>
+                  </div>
+                  {m.badge ? (
+                    <RiskBadge level={exposure.aggregateRisk} />
+                  ) : (
+                    <div className={`text-2xl font-extrabold tabular-nums ${m.color}`}>{m.value}</div>
+                  )}
+                </CardContent>
+              </Card>
+            </StaggerItem>
+          );
+        })}
+      </StaggerContainer>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Distribution chart */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-accent" />
-              <CardTitle>Distribuição por Camada</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {distData.length > 0 ? (
-              <div>
-                <ResponsiveContainer width="100%" height={200}>
+        <FadeIn delay={0.15}>
+          <Card accent>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
+                <BarChart3 className="w-4 h-4 text-accent" />
+                <CardTitle>Distribuição por Camada</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {distData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={distData}>
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#556583", fontSize: 10 }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#556583", fontSize: 10 }}
-                      tickFormatter={(v) => `${v}%`}
-                    />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#5c5849", fontSize: 9, fontWeight: 700 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#5c5849", fontSize: 9, fontWeight: 700 }} tickFormatter={(v) => `${v}%`} />
                     <Tooltip
-                      contentStyle={{
-                        background: "#111622",
-                        border: "1px solid #1e2640",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        color: "#f0f4f8",
-                      }}
+                      contentStyle={{ background: "#0f1118", border: "1px solid #1f2233", borderRadius: "12px", fontSize: "11px", color: "#eee9df" }}
                       formatter={(value: any) => [`${value}%`, "Alocação"]}
                     />
-                    <Bar dataKey="value" name="Percentual">
-                      {distData.map((entry, i) => (
-                        <Cell key={i} fill={entry.fill} />
-                      ))}
+                    <Bar dataKey="value" name="Percentual" radius={[4, 4, 0, 0]}>
+                      {distData.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-text-muted">
-                Sem dados de distribuição
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-sm text-text-muted">Sem dados</div>
+              )}
+            </CardContent>
+          </Card>
+        </FadeIn>
 
-        {/* Quality radar */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-accent" />
-              <CardTitle>Perfil de Qualidade</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {radarData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                  <PolarGrid stroke="#1e2640" />
-                  <PolarAngleAxis
-                    dataKey="subject"
-                    tick={{ fill: "#8b9dc3", fontSize: 10 }}
-                  />
-                  <Radar
-                    name="Qualidade"
-                    dataKey="value"
-                    stroke="#10b981"
-                    fill="#10b981"
-                    fillOpacity={0.15}
-                    strokeWidth={2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-text-muted">
-                Sem dados
+        <FadeIn delay={0.2}>
+          <Card accent>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
+                <Target className="w-4 h-4 text-accent" />
+                <CardTitle>Perfil de Qualidade</CardTitle>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {radarData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <PolarGrid stroke="#1f2233" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: "#9a9484", fontSize: 9, fontWeight: 700 }} />
+                    <Radar name="Qualidade" dataKey="value" stroke="#e4ba60" fill="#e4ba60" fillOpacity={0.1} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-sm text-text-muted">Sem dados</div>
+              )}
+            </CardContent>
+          </Card>
+        </FadeIn>
       </div>
 
-      {/* Detailed breakdown */}
+      {/* Detailed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Market concentration */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-accent" />
-              <CardTitle>Concentração por Mercado</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {marketData.map((m) => (
-                <div key={m.market}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-text-secondary">{m.market}</span>
-                    <span className="text-xs font-medium text-text-primary tabular-nums">
-                      {m.count}x ({m.percent}%)
-                    </span>
-                  </div>
-                  <Progress value={m.percent} className="h-1.5" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Alerts */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-warning" />
-              <CardTitle>Alertas de Risco</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {/* Exposure alert */}
-              <div className={`flex items-start gap-3 p-3 rounded-xl ${
-                exposure.exposedPercent > 80 ? "bg-danger/5 border border-danger/20" :
-                exposure.exposedPercent > 50 ? "bg-warning/5 border border-warning/20" :
-                "bg-risk-low/5 border border-risk-low/20"
-              }`}>
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                  exposure.exposedPercent > 80 ? "bg-danger/10" :
-                  exposure.exposedPercent > 50 ? "bg-warning/10" :
-                  "bg-risk-low/10"
-                }`}>
-                  {exposure.exposedPercent > 80 ? (
-                    <AlertTriangle className="w-3.5 h-3.5 text-danger" />
-                  ) : exposure.exposedPercent > 50 ? (
-                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-                  ) : (
-                    <CheckCircle className="w-3.5 h-3.5 text-risk-low" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-text-primary">
-                    Exposição da Banca: {exposure.exposedPercent}%
-                  </div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
-                    {exposure.exposedPercent > 80
-                      ? "Exposição muito alta. Considere reduzir o investimento."
-                      : exposure.exposedPercent > 50
-                        ? "Exposição moderada. Monitore com atenção."
-                        : "Exposição dentro de limites saudáveis."}
-                  </div>
-                </div>
+        <FadeIn delay={0.25}>
+          <Card accent>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
+                <PieChart className="w-4 h-4 text-accent" />
+                <CardTitle>Concentração por Mercado</CardTitle>
               </div>
-
-              {/* Scenario coherence */}
-              <div className={`flex items-start gap-3 p-3 rounded-xl ${
-                exposure.sameScenario ? "bg-risk-low/5 border border-risk-low/20" : "bg-warning/5 border border-warning/20"
-              }`}>
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                  exposure.sameScenario ? "bg-risk-low/10" : "bg-warning/10"
-                }`}>
-                  {exposure.sameScenario ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-risk-low" />
-                  ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-text-primary">
-                    Coerência de Cenário
-                  </div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
-                    {exposure.sameScenario
-                      ? "Todas as apostas seguem o mesmo cenário detectado."
-                      : "Apostas divididas entre cenários diferentes."}
-                  </div>
-                </div>
-              </div>
-
-              {/* High risk */}
-              {exposure.highRiskPercent > 0 && (
-                <div className={`flex items-start gap-3 p-3 rounded-xl ${
-                  exposure.highRiskPercent > 20 ? "bg-danger/5 border border-danger/20" : "bg-warning/5 border border-warning/20"
-                }`}>
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                    exposure.highRiskPercent > 20 ? "bg-danger/10" : "bg-warning/10"
-                  }`}>
-                    <Zap className={`w-3.5 h-3.5 ${exposure.highRiskPercent > 20 ? "text-danger" : "text-warning"}`} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-text-primary">
-                      {exposure.highRiskPercent}% em Odds Altas (20x+)
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {marketData.map((m) => (
+                  <div key={m.market}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-text-secondary font-medium">{m.market}</span>
+                      <span className="text-[10px] font-bold text-text-primary tabular-nums">{m.count}x ({m.percent}%)</span>
                     </div>
-                    <div className="text-[11px] text-text-muted mt-0.5">
-                      {exposure.highRiskPercent > 20
-                        ? "Proporção elevada em odds de alto risco. Tenha cautela."
-                        : "Proporção aceitável de apostas de alto risco."}
-                    </div>
+                    <Progress value={m.percent} className="h-1" />
                   </div>
-                </div>
-              )}
-
-              {/* Dependency */}
-              <div className={`flex items-start gap-3 p-3 rounded-xl ${
-                exposure.scenarioDependency > 80 ? "bg-warning/5 border border-warning/20" : "bg-risk-low/5 border border-risk-low/20"
-              }`}>
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                  exposure.scenarioDependency > 80 ? "bg-warning/10" : "bg-risk-low/10"
-                }`}>
-                  <Brain className={`w-3.5 h-3.5 ${exposure.scenarioDependency > 80 ? "text-warning" : "text-risk-low"}`} />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-text-primary">
-                    Dependência de Cenário: {exposure.scenarioDependency}%
-                  </div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
-                    {exposure.scenarioDependency > 80
-                      ? "Alta dependência em um cenário único."
-                      : "Boa diversificação entre cenários."}
-                  </div>
-                </div>
+                ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </FadeIn>
+
+        <FadeIn delay={0.3}>
+          <Card accent>
+            <CardHeader>
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-warning" />
+                <CardTitle>Alertas de Risco</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  {
+                    ok: exposure.exposedPercent <= 50,
+                    warn: exposure.exposedPercent <= 80,
+                    title: `Exposição: ${exposure.exposedPercent}%`,
+                    desc: exposure.exposedPercent > 80 ? "Exposição muito alta." : exposure.exposedPercent > 50 ? "Exposição moderada." : "Dentro de limites saudáveis.",
+                  },
+                  {
+                    ok: exposure.sameScenario,
+                    warn: true,
+                    title: "Coerência de Cenário",
+                    desc: exposure.sameScenario ? "Apostas seguem o mesmo cenário." : "Apostas divididas entre cenários.",
+                  },
+                  ...(exposure.highRiskPercent > 0 ? [{
+                    ok: exposure.highRiskPercent <= 10,
+                    warn: exposure.highRiskPercent <= 20,
+                    title: `${exposure.highRiskPercent}% em Odds 20x+`,
+                    desc: exposure.highRiskPercent > 20 ? "Proporção elevada." : "Proporção aceitável.",
+                  }] : []),
+                  {
+                    ok: exposure.scenarioDependency <= 60,
+                    warn: exposure.scenarioDependency <= 80,
+                    title: `Dependência: ${exposure.scenarioDependency}%`,
+                    desc: exposure.scenarioDependency > 80 ? "Alta dependência em cenário único." : "Boa diversificação.",
+                  },
+                ].map((alert, i) => {
+                  const status = alert.ok ? "ok" : alert.warn ? "warn" : "danger";
+                  const colors = {
+                    ok: { bg: "bg-risk-low/5 border-risk-low/15", icon: "bg-risk-low/10 text-risk-low" },
+                    warn: { bg: "bg-warning/5 border-warning/15", icon: "bg-warning/10 text-warning" },
+                    danger: { bg: "bg-danger/5 border-danger/15", icon: "bg-danger/10 text-danger" },
+                  }[status];
+
+                  return (
+                    <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${colors.bg}`}>
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${colors.icon}`}>
+                        {alert.ok ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-text-primary">{alert.title}</div>
+                        <div className="text-[10px] text-text-muted mt-0.5">{alert.desc}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </FadeIn>
       </div>
     </div>
-  );
-}
-
-function DollarSign(props: React.SVGProps<SVGSVGElement> & { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <line x1="12" x2="12" y1="2" y2="22" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
   );
 }

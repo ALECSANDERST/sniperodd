@@ -10,17 +10,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-bg-primary">
+    <div className="min-h-screen bg-bg-primary relative">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <Header sidebarCollapsed={collapsed} />
 
       <main
         className={cn(
-          "pt-16 min-h-screen transition-all duration-300",
+          "relative z-10 pt-16 min-h-screen transition-all duration-300",
           collapsed ? "lg:pl-[72px]" : "lg:pl-[260px]"
         )}
       >
-        <div className="p-5 lg:p-6 max-w-[1400px] mx-auto">
+        <div className="p-5 lg:p-8 max-w-[1400px] mx-auto">
           {children}
         </div>
       </main>
@@ -33,6 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             background: "var(--color-bg-card)",
             border: "1px solid var(--color-border)",
             color: "var(--color-text-primary)",
+            fontFamily: "Plus Jakarta Sans, system-ui, sans-serif",
           },
         }}
       />

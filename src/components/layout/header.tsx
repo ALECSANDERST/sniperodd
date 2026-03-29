@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Crosshair,
   Menu,
-  Search,
   X,
   LayoutDashboard,
   ShieldAlert,
@@ -30,7 +29,7 @@ interface HeaderProps {
 
 export default function Header({ sidebarCollapsed }: HeaderProps) {
   const pathname = usePathname();
-  const { result, loading } = useBettingStore();
+  const { result } = useBettingStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const totalReturn = result
@@ -56,15 +55,12 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
       <header
         className={cn(
           "fixed top-0 right-0 z-30 h-16 border-b border-border glass flex items-center justify-between px-5 transition-all duration-300",
-          sidebarCollapsed
-            ? "lg:left-[72px]"
-            : "lg:left-[260px]",
+          sidebarCollapsed ? "lg:left-[72px]" : "lg:left-[260px]",
           "left-0"
         )}
       >
         {/* Left */}
         <div className="flex items-center gap-4">
-          {/* Mobile menu */}
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-card transition-colors"
@@ -74,16 +70,18 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 lg:hidden">
-            <Crosshair className="w-4.5 h-4.5 text-accent" />
+            <Crosshair className="w-4 h-4 text-accent" />
             <span className="text-sm font-bold text-text-primary">
               Sniper<span className="text-accent">Odd</span>
             </span>
           </div>
 
-          {/* Page title */}
-          <h1 className="text-sm font-semibold text-text-primary hidden lg:block">
-            {pageTitle[pathname] || "SniperOdd"}
-          </h1>
+          {/* Page title with serif accent */}
+          <div className="hidden lg:block">
+            <h1 className="text-sm font-semibold text-text-primary">
+              {pageTitle[pathname] || "SniperOdd"}
+            </h1>
+          </div>
         </div>
 
         {/* Right */}
@@ -91,24 +89,24 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
           {result && (
             <div className="hidden sm:flex items-center gap-4">
               <div className="text-right">
-                <div className="text-[10px] text-text-muted">Score</div>
+                <div className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Score</div>
                 <div
                   className={cn(
-                    "text-xs font-bold",
+                    "text-xs font-extrabold tabular-nums",
                     avgQuality >= 85
                       ? "text-risk-low"
                       : avgQuality >= 75
-                        ? "text-info"
+                        ? "text-accent"
                         : "text-warning"
                   )}
                 >
-                  {avgQuality}/100
+                  {avgQuality}
                 </div>
               </div>
               <div className="w-px h-6 bg-border" />
               <div className="text-right">
-                <div className="text-[10px] text-text-muted">Retorno</div>
-                <div className="text-xs font-bold text-accent">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Retorno</div>
+                <div className="text-xs font-extrabold text-accent tabular-nums">
                   R${totalReturn.toFixed(2)}
                 </div>
               </div>
@@ -128,18 +126,23 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-72 bg-bg-sidebar border-r border-border p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-8">
+          <div className="absolute left-0 top-0 h-full w-72 bg-bg-sidebar border-r border-border flex flex-col">
+            {/* Decorative gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.02] via-transparent to-transparent pointer-events-none" />
+
+            <div className="p-5 flex items-center justify-between relative">
               <div className="flex items-center gap-2">
-                <Crosshair className="w-5 h-5 text-accent" />
-                <span className="text-base font-bold">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center ring-1 ring-accent/10">
+                  <Crosshair className="w-3.5 h-3.5 text-accent" />
+                </div>
+                <span className="text-sm font-bold">
                   Sniper<span className="text-accent">Odd</span>
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-accent/10 text-accent rounded font-semibold">
-                  PRO
+                <span className="text-[8px] px-1.5 py-0.5 bg-accent-muted text-accent rounded font-bold uppercase tracking-widest border border-border-accent">
+                  Pro
                 </span>
               </div>
               <button
@@ -150,7 +153,7 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
               </button>
             </div>
 
-            <nav className="space-y-1 flex-1">
+            <nav className="flex-1 px-3 space-y-1 relative">
               {mobileNav.map((item) => {
                 const isActive =
                   item.href === "/"
@@ -164,21 +167,23 @@ export default function Header({ sidebarCollapsed }: HeaderProps) {
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all",
                       isActive
-                        ? "bg-accent/10 text-accent"
+                        ? "bg-accent-muted text-accent"
                         : "text-text-muted hover:text-text-primary hover:bg-bg-card"
                     )}
                   >
-                    <Icon className="w-[18px] h-[18px]" />
+                    <Icon className="w-[17px] h-[17px]" />
                     {item.label}
                   </Link>
                 );
               })}
             </nav>
 
-            <div className="pt-4 border-t border-border text-[10px] text-text-muted text-center">
-              SniperOdd PRO &copy; {new Date().getFullYear()}
+            <div className="p-5 border-t border-border relative">
+              <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted text-center">
+                SniperOdd PRO &copy; {new Date().getFullYear()}
+              </div>
             </div>
           </div>
         </div>

@@ -2,6 +2,12 @@
 
 import { motion } from "motion/react";
 
+const springTransition = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 24,
+};
+
 export function FadeIn({
   children,
   delay = 0,
@@ -13,9 +19,9 @@ export function FadeIn({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay, ease: "easeOut" }}
+      transition={{ ...springTransition, delay }}
       className={className}
     >
       {children}
@@ -34,9 +40,9 @@ export function FadeInScale({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.25, delay, ease: "easeOut" }}
+      transition={{ ...springTransition, delay }}
       className={className}
     >
       {children}
@@ -56,17 +62,17 @@ export function SlideIn({
   className?: string;
 }) {
   const offsets = {
-    left: { x: -16, y: 0 },
-    right: { x: 16, y: 0 },
-    up: { x: 0, y: -16 },
-    down: { x: 0, y: 16 },
+    left: { x: -20, y: 0 },
+    right: { x: 20, y: 0 },
+    up: { x: 0, y: -20 },
+    down: { x: 0, y: 20 },
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, ...offsets[direction] }}
       animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.3, delay, ease: "easeOut" }}
+      transition={{ ...springTransition, delay }}
       className={className}
     >
       {children}
@@ -77,9 +83,11 @@ export function SlideIn({
 export function StaggerContainer({
   children,
   className,
+  staggerDelay = 0.08,
 }: {
   children: React.ReactNode;
   className?: string;
+  staggerDelay?: number;
 }) {
   return (
     <motion.div
@@ -89,7 +97,7 @@ export function StaggerContainer({
         hidden: {},
         visible: {
           transition: {
-            staggerChildren: 0.06,
+            staggerChildren: staggerDelay,
           },
         },
       }}
@@ -110,10 +118,10 @@ export function StaggerItem({
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0 },
+        hidden: { opacity: 0, y: 16, scale: 0.98 },
+        visible: { opacity: 1, y: 0, scale: 1 },
       }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={springTransition}
       className={className}
     >
       {children}

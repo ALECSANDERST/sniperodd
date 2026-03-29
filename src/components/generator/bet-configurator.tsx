@@ -21,12 +21,12 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
     <div className="space-y-6">
       {/* Investment */}
       <div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
           <DollarSign className="w-3.5 h-3.5 text-accent" />
           Valor a Investir
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-medium text-sm">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-semibold text-sm">
             R$
           </span>
           <input
@@ -37,19 +37,18 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
             onChange={(e) =>
               onUpdate({ totalInvestment: Math.max(10, Number(e.target.value)) })
             }
-            className="w-full pl-12 pr-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-lg font-bold focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
+            className="w-full pl-12 pr-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-lg font-extrabold tabular-nums focus:outline-none focus:border-accent/30 focus:ring-1 focus:ring-accent/10 transition-all"
           />
         </div>
-        {/* Quick amounts */}
         <div className="flex gap-2 mt-2">
           {[100, 250, 500, 1000].map((v) => (
             <button
               key={v}
               onClick={() => onUpdate({ totalInvestment: v })}
               className={cn(
-                "flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all",
+                "flex-1 py-1.5 rounded-lg text-[10px] font-bold tabular-nums transition-all",
                 config.totalInvestment === v
-                  ? "bg-accent/10 text-accent border border-accent/20"
+                  ? "bg-accent-muted text-accent border border-border-accent"
                   : "bg-bg-elevated text-text-muted hover:text-text-secondary border border-transparent"
               )}
             >
@@ -61,7 +60,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
 
       {/* Bet count */}
       <div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
           <Target className="w-3.5 h-3.5 text-accent" />
           Número de Apostas
         </label>
@@ -71,9 +70,9 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               key={n}
               onClick={() => onUpdate({ betCount: n })}
               className={cn(
-                "flex-1 py-3 rounded-xl border font-bold text-sm transition-all duration-200",
+                "flex-1 py-3 rounded-xl border font-extrabold text-sm transition-all duration-200",
                 config.betCount === n
-                  ? "border-accent/40 bg-accent/10 text-accent ring-1 ring-accent/20"
+                  ? "border-accent/30 bg-accent-muted text-accent ring-1 ring-accent/10"
                   : "border-border bg-bg-card text-text-secondary hover:bg-bg-card-hover hover:border-border-hover"
               )}
             >
@@ -85,7 +84,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
 
       {/* Risk profile */}
       <div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
           Perfil de Risco
         </label>
         <RiskProfileSelector selected={config.riskProfile} onSelect={onSetRiskProfile} />
@@ -93,7 +92,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
 
       {/* Stake mode */}
       <div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2.5">
           Modo de Stake
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -107,7 +106,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               className={cn(
                 "p-3 rounded-xl border flex items-center gap-3 transition-all duration-200 text-left",
                 config.stakeMode === m.value
-                  ? "border-accent/40 bg-accent/10 ring-1 ring-accent/20"
+                  ? "border-accent/30 bg-accent-muted ring-1 ring-accent/10"
                   : "border-border bg-bg-card hover:bg-bg-card-hover hover:border-border-hover"
               )}
             >
@@ -118,7 +117,7 @@ export default function BetConfigurator({ config, onUpdate, onSetRiskProfile }: 
               </div>
               <div>
                 <div className={cn(
-                  "text-sm font-semibold",
+                  "text-sm font-bold",
                   config.stakeMode === m.value ? "text-accent" : "text-text-primary"
                 )}>
                   {m.label}

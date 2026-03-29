@@ -8,35 +8,16 @@ import {
   Crosshair,
   ShieldAlert,
   History,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
 
 const navItems = [
-  {
-    label: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Gerador",
-    href: "/gerador",
-    icon: Crosshair,
-    accent: true,
-  },
-  {
-    label: "Exposição",
-    href: "/exposicao",
-    icon: ShieldAlert,
-  },
-  {
-    label: "Histórico",
-    href: "/historico",
-    icon: History,
-  },
+  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Gerador", href: "/gerador", icon: Crosshair, highlight: true },
+  { label: "Exposição", href: "/exposicao", icon: ShieldAlert },
+  { label: "Histórico", href: "/historico", icon: History },
 ];
 
 interface SidebarProps {
@@ -54,19 +35,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         collapsed ? "w-[72px]" : "w-[260px]"
       )}
     >
+      {/* Decorative gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.02] via-transparent to-teal/[0.01] pointer-events-none" />
+
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 border-b border-border shrink-0">
+      <div className="h-16 flex items-center px-5 border-b border-border shrink-0 relative">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-            <Crosshair className="w-4.5 h-4.5 text-accent" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center shrink-0 ring-1 ring-accent/10">
+            <Crosshair className="w-4 h-4 text-accent" />
           </div>
           {!collapsed && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <span className="text-base font-bold text-text-primary tracking-tight whitespace-nowrap">
                 Sniper<span className="text-accent">Odd</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 bg-accent/10 text-accent rounded font-semibold">
-                PRO
+              <span className="text-[8px] px-1.5 py-0.5 bg-accent-muted text-accent rounded font-bold uppercase tracking-widest border border-border-accent">
+                Pro
               </span>
             </div>
           )}
@@ -74,11 +58,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-5 px-3 space-y-1 overflow-y-auto relative">
         {!collapsed && (
-          <div className="px-3 mb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-              Menu
+          <div className="px-3 mb-4">
+            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted">
+              Navegação
             </span>
           </div>
         )}
@@ -94,43 +78,50 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative",
                 isActive
-                  ? "bg-accent/10 text-accent"
+                  ? "bg-accent-muted text-accent"
                   : "text-text-muted hover:text-text-primary hover:bg-bg-card",
                 collapsed && "justify-center px-0"
               )}
             >
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-accent rounded-r-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 bg-accent rounded-r-full" />
               )}
               <Icon
                 className={cn(
-                  "w-[18px] h-[18px] shrink-0",
+                  "w-[17px] h-[17px] shrink-0 transition-colors",
                   isActive ? "text-accent" : "text-text-muted group-hover:text-text-secondary"
                 )}
               />
               {!collapsed && <span>{item.label}</span>}
-              {!collapsed && item.accent && !isActive && (
-                <Zap className="w-3 h-3 text-accent ml-auto" />
+              {!collapsed && item.highlight && !isActive && (
+                <Zap className="w-3 h-3 text-accent/50 ml-auto" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="p-3 border-t border-border">
+      {/* Footer */}
+      <div className="p-3 border-t border-border relative">
+        {!collapsed && (
+          <div className="px-3 mb-3">
+            <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
+              Motor v2.0
+            </div>
+          </div>
+        )}
         <button
           onClick={onToggle}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-text-muted hover:text-text-secondary hover:bg-bg-card transition-all text-xs"
         >
           {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           ) : (
             <>
-              <ChevronLeft className="w-4 h-4" />
-              <span>Recolher</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="font-medium">Recolher</span>
             </>
           )}
         </button>
