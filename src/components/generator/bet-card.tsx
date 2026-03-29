@@ -1,6 +1,7 @@
 "use client";
 
 import { GeneratedBet } from "@/types";
+import { motion, AnimatePresence } from "motion/react";
 import {
   TrendingUp,
   Lock,
@@ -50,15 +51,19 @@ export default function BetCard({
   return (
     <Card accent className={cn(
       "transition-all duration-300",
-      bet.fixed && "ring-1 ring-accent/20 border-accent/20"
+      bet.fixed && "ring-1 ring-accent/20 border-accent/20 shadow-[0_0_24px_-6px_rgba(228,186,96,0.1)]"
     )}>
       <div className="p-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 flex items-center justify-center text-accent font-extrabold text-sm ring-1 ring-accent/10">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 flex items-center justify-center text-accent font-extrabold text-sm ring-1 ring-accent/10"
+            >
               {index + 1}
-            </div>
+            </motion.div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-muted">
                 {bet.layer}
@@ -76,9 +81,12 @@ export default function BetCard({
         {/* Selections */}
         <div className="space-y-1.5 mb-4">
           {bet.selections.map((sel, i) => (
-            <div
+            <motion.div
               key={i}
-              className="flex items-center justify-between p-3 bg-bg-elevated rounded-xl border border-border/50"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24, delay: i * 0.04 }}
+              className="flex items-center justify-between p-3 bg-bg-elevated rounded-xl border border-border/50 hover:border-border-hover transition-colors"
             >
               <div className="min-w-0">
                 <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
@@ -91,7 +99,7 @@ export default function BetCard({
               <div className="text-accent font-extrabold text-sm pl-3 shrink-0 tabular-nums">
                 {sel.odd.toFixed(2)}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -136,48 +144,65 @@ export default function BetCard({
         </div>
 
         {/* Quality breakdown */}
-        <button
+        <motion.button
+          whileHover={{ x: 2 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted hover:text-text-secondary transition-colors mb-3"
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           Score: {bet.quality.total}/100
-        </button>
+        </motion.button>
 
-        {expanded && (
-          <div className="space-y-2.5 mb-4 p-3.5 bg-bg-elevated rounded-xl border border-border/50">
-            {[
-              { label: "Coerência", value: bet.quality.coherence, max: 25 },
-              { label: "Seleções", value: bet.quality.selectionCount, max: 20 },
-              { label: "Risco da Odd", value: bet.quality.oddRisk, max: 20 },
-              { label: "Mercado", value: bet.quality.marketType, max: 15 },
-              { label: "Correlação", value: bet.quality.correlation, max: 20 },
-            ].map((s) => {
-              const pct = Math.round((s.value / s.max) * 100);
-              return (
-                <div key={s.label}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-medium text-text-muted">{s.label}</span>
-                    <span className="text-[10px] font-bold text-text-secondary tabular-nums">
-                      {s.value}/{s.max}
-                    </span>
-                  </div>
-                  <Progress
-                    value={pct}
-                    className="h-1"
-                    indicatorClassName={
-                      pct >= 70
-                        ? "bg-gradient-to-r from-risk-low/60 to-risk-low"
-                        : pct >= 40
-                          ? "bg-gradient-to-r from-info/60 to-info"
-                          : "bg-gradient-to-r from-warning/60 to-warning"
-                    }
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-2.5 mb-4 p-3.5 bg-bg-elevated rounded-xl border border-border/50">
+                {[
+                  { label: "Coerência", value: bet.quality.coherence, max: 25 },
+                  { label: "Seleções", value: bet.quality.selectionCount, max: 20 },
+                  { label: "Risco da Odd", value: bet.quality.oddRisk, max: 20 },
+                  { label: "Mercado", value: bet.quality.marketType, max: 15 },
+                  { label: "Correlação", value: bet.quality.correlation, max: 20 },
+                ].map((s, i) => {
+                  const pct = Math.round((s.value / s.max) * 100);
+                  return (
+                    <motion.div
+                      key={s.label}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 24, delay: i * 0.04 }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-medium text-text-muted">{s.label}</span>
+                        <span className="text-[10px] font-bold text-text-secondary tabular-nums">
+                          {s.value}/{s.max}
+                        </span>
+                      </div>
+                      <Progress
+                        value={pct}
+                        className="h-1"
+                        indicatorClassName={
+                          pct >= 70
+                            ? "bg-gradient-to-r from-risk-low/60 to-risk-low"
+                            : pct >= 40
+                              ? "bg-gradient-to-r from-info/60 to-info"
+                              : "bg-gradient-to-r from-warning/60 to-warning"
+                        }
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Actions */}
         <div className="flex gap-2">
