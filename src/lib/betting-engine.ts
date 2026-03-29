@@ -685,7 +685,22 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     const minQuality = (input.riskProfile === "extremo" || input.riskProfile === "ultra_agressivo") ? 50 : 70;
-    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, minQuality, input.riskProfile, homeTeam, awayTeam);
+
+    // Tentar com o range original, depois relaxar progressivamente
+    let best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, minQuality, input.riskProfile, homeTeam, awayTeam);
+
+    // Relaxar: expandir range de odds em ±30%
+    if (!best) {
+      const relaxedLayer = { ...layer, oddMin: +(layer.oddMin * 0.7).toFixed(2), oddMax: +(layer.oddMax * 1.3).toFixed(2) };
+      best = findBestCombo(candidates, relaxedLayer, usedSelectionKeys, analysis, Math.max(minQuality - 20, 30), input.riskProfile, homeTeam, awayTeam);
+    }
+
+    // Relaxar mais: qualquer odd, score mínimo 0
+    if (!best) {
+      const wideLayer = { ...layer, oddMin: 1.3, oddMax: Math.max(layer.oddMax * 2, 10) };
+      best = findBestCombo(candidates, wideLayer, usedSelectionKeys, analysis, 0, input.riskProfile, homeTeam, awayTeam);
+    }
+
     if (!best) continue;
 
     best.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
@@ -694,69 +709,92 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
     bets.push(buildBet(best, stake, layer, i, analysis, homeTeam, awayTeam));
   }
 
-  // Se não gerou o número solicitado, tentar preencher com apostas extras
+  // Se não gerou o número solicitado, preencher com apostas extras
   if (bets.length < input.betCount) {
-    const remaining = input.betCount - bets.length;
     const profileConfig = getProfileOddRange(input.riskProfile);
 
-    // Tentar com score mínimo progressivamente mais baixo
-    for (const minScore of [60, 50, 40, 0]) {
+    // Fase 1: Tentar com range do perfil, seleções não usadas, scores progressivos
+    for (const minScore of [60, 40, 20, 0]) {
       if (bets.length >= input.betCount) break;
 
-      // Expandir range de odds para encontrar mais combinações
-      const expandedLayer: BankLayer = {
-        label: "Extra",
-        oddMin: profileConfig.oddMin,
-        oddMax: profileConfig.oddMax,
-        maxSelections: profileConfig.maxSelections,
-        stakePercent: 0,
-        riskLevel: profileConfig.riskLevel,
-      };
-
-      // generateCombinations já filtra conflitos; não re-validar
-      const combos = generateCombinations(candidates, expandedLayer.maxSelections, expandedLayer.oddMin, expandedLayer.oddMax, homeTeam, awayTeam);
+      const combos = generateCombinations(candidates, profileConfig.maxSelections, profileConfig.oddMin, profileConfig.oddMax, homeTeam, awayTeam);
       let scored = combos.map((c) => ({
         ...c,
         quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario, input.riskProfile),
       }));
 
-      // Filtrar por score mínimo
-      if (minScore > 0) {
-        scored = scored.filter((c) => c.quality.total >= minScore);
-      }
-
-      // Filtrar seleções já usadas
-      scored = scored.filter((c) =>
-        !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))
-      );
-
+      if (minScore > 0) scored = scored.filter((c) => c.quality.total >= minScore);
+      scored = scored.filter((c) => !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`)));
       scored.sort((a, b) => b.quality.total - a.quality.total);
 
-      // Pegar as melhores combinações restantes
       for (const combo of scored) {
         if (bets.length >= input.betCount) break;
-
-        // Verificar novamente se as seleções não foram usadas (podem ter sido adicionadas no loop)
         if (combo.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))) continue;
 
         combo.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
-        const stake = 0; // será redistribuído abaixo
-
-        bets.push(buildBet(combo, stake, {
-          ...expandedLayer,
-          label: `Camada ${bets.length + 1}`,
+        bets.push(buildBet(combo, 0, {
+          ...profileConfig, label: `Camada ${bets.length + 1}`, stakePercent: 0,
           riskLevel: (combo.totalOdd >= 10 ? "muito_alto" : combo.totalOdd >= 5 ? "alto" : combo.totalOdd >= 3 ? "medio" : "baixo") as BetRiskLevel,
         }, bets.length, analysis, homeTeam, awayTeam));
       }
     }
 
-    // Redistribuir stakes igualmente entre todas as apostas
-    if (bets.length > 0) {
-      const stakeEach = +(input.totalInvestment / bets.length).toFixed(2);
-      for (const bet of bets) {
-        bet.stake = stakeEach;
-        bet.potentialReturn = +(bet.stake * bet.totalOdd).toFixed(2);
+    // Fase 2: Range bem amplo (1.3 a 50x), permitindo qualquer combinação coerente
+    if (bets.length < input.betCount) {
+      const wideCombos = generateCombinations(candidates, Math.max(profileConfig.maxSelections, 3), 1.3, 50, homeTeam, awayTeam);
+      let wideScored = wideCombos.map((c) => ({
+        ...c,
+        quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario, input.riskProfile),
+      }));
+      // Não filtrar por seleções usadas individualmente — filtrar combos já idênticos
+      const existingCombos = new Set(bets.map((b) => b.selections.map((s) => `${s.market}:${s.selection}`).sort().join("|")));
+      wideScored = wideScored.filter((c) => {
+        const key = c.selections.map((s) => `${s.market}:${s.selection}`).sort().join("|");
+        return !existingCombos.has(key);
+      });
+      wideScored.sort((a, b) => b.quality.total - a.quality.total);
+
+      for (const combo of wideScored) {
+        if (bets.length >= input.betCount) break;
+        const key = combo.selections.map((s) => `${s.market}:${s.selection}`).sort().join("|");
+        if (existingCombos.has(key)) continue;
+        existingCombos.add(key);
+
+        bets.push(buildBet(combo, 0, {
+          label: `Camada ${bets.length + 1}`, oddMin: 1.3, oddMax: 50, maxSelections: 3, stakePercent: 0,
+          riskLevel: (combo.totalOdd >= 10 ? "muito_alto" : combo.totalOdd >= 5 ? "alto" : combo.totalOdd >= 3 ? "medio" : "baixo") as BetRiskLevel,
+        }, bets.length, analysis, homeTeam, awayTeam));
       }
+    }
+
+    // Fase 3: Último recurso — apostas simples (1 seleção cada)
+    if (bets.length < input.betCount) {
+      const existingCombos = new Set(bets.map((b) => b.selections.map((s) => `${s.market}:${s.selection}`).sort().join("|")));
+      const singleCandidates = candidates
+        .filter((c) => c.odd >= 1.3)
+        .sort((a, b) => b.odd - a.odd);
+
+      for (const cand of singleCandidates) {
+        if (bets.length >= input.betCount) break;
+        const key = `${cand.market}:${cand.selection}`;
+        if (existingCombos.has(key)) continue;
+        existingCombos.add(key);
+
+        const singleCombo = { selections: [cand], totalOdd: cand.odd, quality: calculateQualityScore([cand], cand.odd, analysis.scenario, input.riskProfile) };
+        bets.push(buildBet(singleCombo, 0, {
+          label: `Simples ${bets.length + 1}`, oddMin: 1.3, oddMax: 10, maxSelections: 1, stakePercent: 0,
+          riskLevel: (cand.odd >= 5 ? "alto" : cand.odd >= 3 ? "medio" : "baixo") as BetRiskLevel,
+        }, bets.length, analysis, homeTeam, awayTeam));
+      }
+    }
+  }
+
+  // Redistribuir stakes proporcionalmente entre todas as apostas
+  if (bets.length > 0) {
+    const stakeEach = +(input.totalInvestment / bets.length).toFixed(2);
+    for (const bet of bets) {
+      bet.stake = stakeEach;
+      bet.potentialReturn = +(bet.stake * bet.totalOdd).toFixed(2);
     }
   }
 
