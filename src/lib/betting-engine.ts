@@ -789,6 +789,51 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
     }
   }
 
+  // Filtrar apostas com coerência abaixo de 70%
+  // Só mantém apostas coerentes — nunca entrega lixo ao usuário
+  const minCoherence = 70;
+  for (let i = bets.length - 1; i >= 0; i--) {
+    const bet = bets[i];
+    if (bet.coherence && bet.coherence.score < minCoherence) {
+      bets.splice(i, 1);
+    }
+  }
+
+  // Se ficou com menos apostas do que o pedido após filtro de coerência,
+  // tentar gerar apostas simples (1 seleção = coerência 100% garantida)
+  if (bets.length < input.betCount) {
+    const existingKeys = new Set(bets.flatMap((b) => b.selections.map((s) => `${s.market}:${s.selection}`)));
+    const simpleCandidates = candidates
+      .filter((c) => c.odd >= 1.3 && !existingKeys.has(`${c.market}:${c.selection}`))
+      .sort((a, b) => b.odd - a.odd);
+
+    for (const cand of simpleCandidates) {
+      if (bets.length >= input.betCount) break;
+      const key = `${cand.market}:${cand.selection}`;
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+
+      const singleCombo = {
+        selections: [cand],
+        totalOdd: cand.odd,
+        quality: calculateQualityScore([cand], cand.odd, analysis.scenario, input.riskProfile),
+      };
+      const bet = buildBet(singleCombo, 0, {
+        label: `Simples ${bets.length + 1}`,
+        oddMin: 1.3,
+        oddMax: 10,
+        maxSelections: 1,
+        stakePercent: 0,
+        riskLevel: (cand.odd >= 5 ? "alto" : cand.odd >= 3 ? "medio" : "baixo") as BetRiskLevel,
+      }, bets.length, analysis, homeTeam, awayTeam);
+
+      // Aposta simples sempre tem coerência alta (sem conflitos possíveis)
+      if (!bet.coherence || bet.coherence.score >= minCoherence) {
+        bets.push(bet);
+      }
+    }
+  }
+
   // Redistribuir stakes proporcionalmente entre todas as apostas
   if (bets.length > 0) {
     const stakeEach = +(input.totalInvestment / bets.length).toFixed(2);

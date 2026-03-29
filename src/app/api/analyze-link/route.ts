@@ -1,16 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseLink } from "@/lib/link-parser";
 import { matchEvents } from "@/lib/link-matcher";
+import { scrapeOddsFromLink } from "@/lib/link-scraper";
 import { getUpcomingGames, getGameOdds } from "@/lib/odds-api";
 import type { SportEvent, GameOdds, OddsMarket } from "@/types";
 
 /**
- * Generate realistic mock odds for events not in the API.
- * This allows the system to always work even when the event
- * is not covered by the odds providers.
+ * Merge odds from multiple sources, keeping the best price for each outcome.
+ */
+function mergeOdds(primary: GameOdds, secondary: GameOdds): GameOdds {
+  const marketMap = new Map<string, OddsMarket>();
+
+  // Start with primary markets
+  for (const market of primary.markets) {
+    marketMap.set(market.key, { ...market, outcomes: [...market.outcomes] });
+  }
+
+  // Merge secondary markets
+  for (const market of secondary.markets) {
+    const existing = marketMap.get(market.key);
+    if (!existing) {
+      marketMap.set(market.key, { ...market, outcomes: [...market.outcomes] });
+    } else {
+      // Keep best price for each outcome
+      for (const outcome of market.outcomes) {
+        const existingOutcome = existing.outcomes.find(
+          (o) => o.name === outcome.name && o.point === outcome.point
+        );
+        if (existingOutcome) {
+          existingOutcome.price = Math.max(existingOutcome.price, outcome.price);
+        } else {
+          existing.outcomes.push(outcome);
+        }
+      }
+    }
+  }
+
+  return {
+    ...primary,
+    markets: Array.from(marketMap.values()),
+  };
+}
+
+/**
+ * Generate realistic mock odds for events not in any API.
  */
 function generateMockOddsForEvent(homeTeam: string, awayTeam: string): GameOdds {
-  // Slightly randomized but realistic odds
   const homeWin = +(1.8 + Math.random() * 1.5).toFixed(2);
   const draw = +(2.8 + Math.random() * 1.0).toFixed(2);
   const awayWin = +(2.0 + Math.random() * 2.0).toFixed(2);
@@ -98,23 +133,59 @@ export async function POST(request: NextRequest) {
     // 1. Parse the link
     const parsed = parseLink(url.trim());
 
-    // 2. Fetch available events
-    const events = await getUpcomingGames();
+    // 2. Buscar odds de múltiplas fontes em paralelo
+    const [events, scrapedOdds] = await Promise.all([
+      getUpcomingGames(),
+      // Tentar scrape direto da casa de apostas
+      parsed.homeTeam && parsed.awayTeam
+        ? scrapeOddsFromLink(url.trim(), parsed.source, parsed.homeTeam, parsed.awayTeam)
+        : Promise.resolve(null),
+    ]);
 
-    // 3. Match against events
+    // 3. Match against API events
     const matches = matchEvents(parsed, events);
-
-    // 4. Try to get odds from API
-    let odds = null;
     const bestMatch = matches[0] || null;
 
+    // 4. Buscar odds da API se tiver match confiante
+    let apiOdds: GameOdds | null = null;
     if (bestMatch && bestMatch.confidence >= 70) {
-      odds = await getGameOdds(bestMatch.event.id, bestMatch.event.sportKey);
+      apiOdds = await getGameOdds(bestMatch.event.id, bestMatch.event.sportKey);
     }
 
-    // 5. If no confident match but we extracted team names, create a synthetic event with mock odds
-    const noConfidentMatch = !bestMatch || bestMatch.confidence < 70 || !odds;
-    if (noConfidentMatch && parsed.homeTeam && parsed.awayTeam) {
+    // 5. Determinar melhor fonte de odds
+    let finalOdds: GameOdds | null = null;
+    let oddsSource = "mock";
+
+    if (scrapedOdds && scrapedOdds.markets.length > 0) {
+      // Odds scraped diretamente da casa — prioridade máxima
+      finalOdds = scrapedOdds;
+      oddsSource = "live";
+
+      // Se também temos odds da API, fazer merge (melhores preços)
+      if (apiOdds && apiOdds.markets.length > 0) {
+        finalOdds = mergeOdds(scrapedOdds, apiOdds);
+        oddsSource = "live+api";
+      }
+    } else if (apiOdds && apiOdds.markets.length > 0) {
+      // Odds da API de odds
+      finalOdds = apiOdds;
+      oddsSource = "api";
+    }
+
+    // 6. Se temos match confiante com odds
+    if (bestMatch && bestMatch.confidence >= 70 && finalOdds) {
+      return NextResponse.json({
+        parsed,
+        match: bestMatch,
+        odds: finalOdds,
+        suggestions: matches,
+        synthetic: false,
+        oddsSource,
+      });
+    }
+
+    // 7. Se extraímos os times do link
+    if (parsed.homeTeam && parsed.awayTeam) {
       const syntheticEvent: SportEvent = {
         id: `link_${Date.now()}`,
         homeTeam: parsed.homeTeam,
@@ -124,27 +195,34 @@ export async function POST(request: NextRequest) {
         sportKey: parsed.sportKey || "soccer",
       };
 
-      const syntheticOdds = generateMockOddsForEvent(parsed.homeTeam, parsed.awayTeam);
+      // Usar odds scraped se disponíveis, senão mock
+      if (!finalOdds) {
+        finalOdds = generateMockOddsForEvent(parsed.homeTeam, parsed.awayTeam);
+        oddsSource = "estimated";
+      }
 
       return NextResponse.json({
         parsed,
         match: {
           event: syntheticEvent,
-          confidence: 60,
+          confidence: oddsSource === "live" ? 85 : 60,
           matchedBy: "partial" as const,
         },
-        odds: syntheticOdds,
-        suggestions: [],
-        synthetic: true,
+        odds: finalOdds,
+        suggestions: matches.length > 0 ? matches : [],
+        synthetic: oddsSource !== "live",
+        oddsSource,
       });
     }
 
+    // 8. Nenhum time extraído
     return NextResponse.json({
       parsed,
       match: bestMatch,
-      odds,
+      odds: finalOdds,
       suggestions: matches,
       synthetic: false,
+      oddsSource: "none",
     });
   } catch (error) {
     console.error("Analyze link error:", error);

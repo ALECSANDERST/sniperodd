@@ -43,6 +43,7 @@ import {
 import { generateBets } from "@/lib/betting-engine";
 
 type AnalysisStep = "input" | "matching" | "config" | "loading" | "results";
+type OddsSource = "live" | "live+api" | "api" | "estimated" | "mock" | "none";
 
 interface AnalysisConfig {
   totalInvestment: number;
@@ -72,6 +73,7 @@ export default function AnalisePage() {
   const [odds, setOdds] = useState<GameOdds | null>(null);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [oddsSource, setOddsSource] = useState<OddsSource>("none");
   const [config, setConfig] = useState<AnalysisConfig>({
     totalInvestment: 500,
     betCount: 3,
@@ -124,9 +126,16 @@ export default function AnalisePage() {
       if (data.match && data.odds) {
         setMatchedEvent(data.match.event);
         setOdds(data.odds);
+        setOddsSource(data.oddsSource || "mock");
         setStep("config");
-        toast.success(data.synthetic ? "Jogo detectado!" : "Jogo encontrado!", {
-          description: `${data.match.event.homeTeam} vs ${data.match.event.awayTeam}${data.synthetic ? " — odds estimadas" : ` — ${data.match.confidence}% match`}`,
+
+        const sourceLabel = data.oddsSource === "live" || data.oddsSource === "live+api"
+          ? "odds ao vivo"
+          : data.oddsSource === "api"
+            ? "odds atualizadas"
+            : "odds estimadas";
+        toast.success("Jogo encontrado!", {
+          description: `${data.match.event.homeTeam} vs ${data.match.event.awayTeam} — ${sourceLabel}`,
         });
       } else if (data.suggestions?.length > 0) {
         setStep("matching");
@@ -442,9 +451,20 @@ export default function AnalisePage() {
                       </div>
 
                       {parsed && (
-                        <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                          <ExternalLink className="w-3 h-3" />
-                          <span>via {SOURCE_LABELS[parsed.source] || parsed.source}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                            <ExternalLink className="w-3 h-3" />
+                            <span>via {SOURCE_LABELS[parsed.source] || parsed.source}</span>
+                          </div>
+                          <Badge variant={
+                            oddsSource === "live" || oddsSource === "live+api" ? "success"
+                              : oddsSource === "api" ? "info"
+                                : "warning"
+                          }>
+                            {oddsSource === "live" || oddsSource === "live+api" ? "Odds ao vivo"
+                              : oddsSource === "api" ? "Odds atualizadas"
+                                : "Odds estimadas"}
+                          </Badge>
                         </div>
                       )}
 
