@@ -10,6 +10,9 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -143,6 +146,44 @@ export default function BetCard({
         <div className="text-[11px] text-text-secondary bg-bg-secondary/50 rounded-xl p-3.5 mb-4 leading-relaxed border border-border/30">
           {bet.explanation}
         </div>
+
+        {/* Coherence badge */}
+        {bet.coherence && (
+          <div className={cn(
+            "flex items-center gap-2 p-3 rounded-xl mb-4 border text-[11px]",
+            bet.coherence.label === "muito_coerente" && "bg-risk-low/5 border-risk-low/20 text-risk-low",
+            bet.coherence.label === "coerente" && "bg-info/5 border-info/20 text-info",
+            bet.coherence.label === "fraca" && "bg-warning/5 border-warning/20 text-warning",
+            (bet.coherence.label === "incoerente" || bet.coherence.label === "impossivel") && "bg-risk-high/5 border-risk-high/20 text-risk-high",
+          )}>
+            {bet.coherence.score >= 60 ? (
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+            ) : bet.coherence.score >= 40 ? (
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+            ) : (
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+            )}
+            <div>
+              <span className="font-bold">
+                Coerência: {bet.coherence.score}/100
+                {bet.coherence.label === "muito_coerente" && " — Muito coerente"}
+                {bet.coherence.label === "coerente" && " — Coerente"}
+                {bet.coherence.label === "fraca" && " — Coerência fraca"}
+                {bet.coherence.label === "incoerente" && " — Incoerente"}
+                {bet.coherence.label === "impossivel" && " — Impossível"}
+              </span>
+              {bet.coherence.conflicts.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {bet.coherence.conflicts.map((c, i) => (
+                    <div key={i} className="text-[10px] opacity-80">
+                      {c.reason}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Quality breakdown */}
         <motion.button

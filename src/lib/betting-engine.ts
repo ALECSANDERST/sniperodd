@@ -6,6 +6,7 @@ import {
   GenerationResult,
   BetSelection,
   BetRiskLevel,
+  BetCoherenceInfo,
   ExposureAnalysis,
   OddsMarket,
   OddsOutcome,
@@ -13,6 +14,15 @@ import {
   RiskProfile,
   RISK_PROFILE_CONFIG,
 } from "@/types";
+import {
+  validateBetCoherence,
+  hasImpossibleConflict,
+  type CoherenceResult,
+} from "./bet-coherence-validator";
+
+// Re-exportar para uso externo (UI, hooks)
+export { validateBetCoherence } from "./bet-coherence-validator";
+export type { CoherenceResult, ConflictDetail } from "./bet-coherence-validator";
 
 // =============================================
 // 1. CLASSIFICAÇÃO DO JOGO
@@ -312,7 +322,8 @@ function getCorrelationScore(selections: SelectionCandidate[]): number {
   return Math.max(0, Math.min(100, raw));
 }
 
-function hasConflict(selections: SelectionCandidate[]): boolean {
+function hasConflict(selections: SelectionCandidate[], homeTeam?: string, awayTeam?: string): boolean {
+  // Fase 1: Tag-based (rápido)
   for (let i = 0; i < selections.length; i++) {
     for (let j = i + 1; j < selections.length; j++) {
       const tagsA = selections[i].tags;
@@ -324,6 +335,19 @@ function hasConflict(selections: SelectionCandidate[]): boolean {
       }
     }
   }
+
+  // Fase 2: Validação semântica profunda (se temos os nomes dos times)
+  if (homeTeam && awayTeam) {
+    const betSelections: BetSelection[] = selections.map((s) => ({
+      market: s.market,
+      selection: s.selection,
+      odd: s.odd,
+    }));
+    if (hasImpossibleConflict(betSelections, homeTeam, awayTeam)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -484,7 +508,9 @@ function generateCombinations(
   candidates: SelectionCandidate[],
   maxSelections: number,
   oddMin: number,
-  oddMax: number
+  oddMax: number,
+  homeTeam?: string,
+  awayTeam?: string
 ): { selections: SelectionCandidate[]; totalOdd: number }[] {
   const results: { selections: SelectionCandidate[]; totalOdd: number }[] = [];
 
@@ -500,7 +526,7 @@ function generateCombinations(
     for (let i = 0; i < candidates.length; i++) {
       for (let j = i + 1; j < candidates.length; j++) {
         const combo = [candidates[i], candidates[j]];
-        if (hasConflict(combo)) continue;
+        if (hasConflict(combo, homeTeam, awayTeam)) continue;
         const odd = +(candidates[i].odd * candidates[j].odd).toFixed(2);
         if (odd >= oddMin && odd <= oddMax) {
           results.push({ selections: combo, totalOdd: odd });
@@ -515,7 +541,7 @@ function generateCombinations(
       for (let j = i + 1; j < candidates.length; j++) {
         for (let k = j + 1; k < candidates.length; k++) {
           const combo = [candidates[i], candidates[j], candidates[k]];
-          if (hasConflict(combo)) continue;
+          if (hasConflict(combo, homeTeam, awayTeam)) continue;
           const odd = +(candidates[i].odd * candidates[j].odd * candidates[k].odd).toFixed(2);
           if (odd >= oddMin && odd <= oddMax) {
             results.push({ selections: combo, totalOdd: odd });
@@ -532,7 +558,7 @@ function generateCombinations(
         for (let k = j + 1; k < candidates.length; k++) {
           for (let l = k + 1; l < candidates.length; l++) {
             const combo = [candidates[i], candidates[j], candidates[k], candidates[l]];
-            if (hasConflict(combo)) continue;
+            if (hasConflict(combo, homeTeam, awayTeam)) continue;
             const odd = +(candidates[i].odd * candidates[j].odd * candidates[k].odd * candidates[l].odd).toFixed(2);
             if (odd >= oddMin && odd <= oddMax) {
               results.push({ selections: combo, totalOdd: odd });
@@ -545,14 +571,14 @@ function generateCombinations(
 
   // Quints (para ultra agressivo)
   if (maxSelections >= 5 && candidates.length >= 5) {
-    const sampled = candidates.slice(0, 12); // limitar para performance
+    const sampled = candidates.slice(0, 12);
     for (let i = 0; i < sampled.length; i++) {
       for (let j = i + 1; j < sampled.length; j++) {
         for (let k = j + 1; k < sampled.length; k++) {
           for (let l = k + 1; l < sampled.length; l++) {
             for (let m = l + 1; m < sampled.length; m++) {
               const combo = [sampled[i], sampled[j], sampled[k], sampled[l], sampled[m]];
-              if (hasConflict(combo)) continue;
+              if (hasConflict(combo, homeTeam, awayTeam)) continue;
               const odd = combo.reduce((acc, c) => acc * c.odd, 1);
               if (odd >= oddMin && odd <= oddMax) {
                 results.push({ selections: combo, totalOdd: +odd.toFixed(2) });
@@ -574,7 +600,7 @@ function generateCombinations(
             for (let m = l + 1; m < sampled.length; m++) {
               for (let n = m + 1; n < sampled.length; n++) {
                 const combo = [sampled[i], sampled[j], sampled[k], sampled[l], sampled[m], sampled[n]];
-                if (hasConflict(combo)) continue;
+                if (hasConflict(combo, homeTeam, awayTeam)) continue;
                 const odd = combo.reduce((acc, c) => acc * c.odd, 1);
                 if (odd >= oddMin && odd <= oddMax) {
                   results.push({ selections: combo, totalOdd: +odd.toFixed(2) });
@@ -619,15 +645,23 @@ function generateExplanation(
 // =============================================
 
 function applyAntiErrorFilter(
-  bets: { selections: SelectionCandidate[]; totalOdd: number; quality: QualityScore }[]
+  bets: { selections: SelectionCandidate[]; totalOdd: number; quality: QualityScore }[],
+  homeTeam?: string,
+  awayTeam?: string
 ): typeof bets {
   return bets.filter((bet) => {
     // Descartar score < 70
     if (bet.quality.total < 70) return false;
     // Máximo 6 seleções
     if (bet.selections.length > 6) return false;
-    // Sem conflitos (já filtrado, mas double-check)
-    if (hasConflict(bet.selections)) return false;
+    // Sem conflitos (tag-based + semântico)
+    if (hasConflict(bet.selections, homeTeam, awayTeam)) return false;
+    // Validação de coerência profunda
+    if (homeTeam && awayTeam) {
+      const betSels: BetSelection[] = bet.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd }));
+      const coherence = validateBetCoherence(betSels, homeTeam, awayTeam);
+      if (!coherence.valid) return false;
+    }
     return true;
   });
 }
@@ -642,9 +676,11 @@ function findBestCombo(
   usedSelectionKeys: Set<string>,
   analysis: { scenario: GameScenario; confidence: number },
   minScore: number,
-  profile?: RiskProfile
+  profile?: RiskProfile,
+  homeTeam?: string,
+  awayTeam?: string
 ) {
-  const combos = generateCombinations(candidates, layer.maxSelections, layer.oddMin, layer.oddMax);
+  const combos = generateCombinations(candidates, layer.maxSelections, layer.oddMin, layer.oddMax, homeTeam, awayTeam);
 
   let scored = combos.map((c) => ({
     ...c,
@@ -652,12 +688,21 @@ function findBestCombo(
   }));
 
   // Filtrar por score mínimo e sanidade
-  scored = scored.filter((c) => c.quality.total >= minScore && c.selections.length <= 6 && !hasConflict(c.selections));
+  scored = scored.filter((c) => c.quality.total >= minScore && c.selections.length <= 6 && !hasConflict(c.selections, homeTeam, awayTeam));
 
   // Filtrar seleções já usadas
   scored = scored.filter((c) =>
     !c.selections.some((s) => usedSelectionKeys.has(`${s.market}:${s.selection}`))
   );
+
+  // Validação de coerência semântica profunda
+  if (homeTeam && awayTeam) {
+    scored = scored.filter((c) => {
+      const betSels: BetSelection[] = c.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd }));
+      const coherence = validateBetCoherence(betSels, homeTeam, awayTeam);
+      return coherence.valid;
+    });
+  }
 
   scored.sort((a, b) => b.quality.total - a.quality.total);
   return scored.length > 0 ? scored[0] : null;
@@ -668,8 +713,22 @@ function buildBet(
   stake: number,
   layer: BankLayer,
   index: number,
-  analysis: { scenario: GameScenario; confidence: number }
+  analysis: { scenario: GameScenario; confidence: number },
+  homeTeam?: string,
+  awayTeam?: string
 ): GeneratedBet {
+  // Calcular coerência semântica
+  let coherence: BetCoherenceInfo | undefined;
+  if (homeTeam && awayTeam) {
+    const betSels: BetSelection[] = combo.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd }));
+    const result = validateBetCoherence(betSels, homeTeam, awayTeam);
+    coherence = {
+      score: result.score,
+      label: result.label,
+      conflicts: result.conflicts.map((c) => ({ reason: c.reason, severity: c.severity })),
+    };
+  }
+
   return {
     id: `bet_${index + 1}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     selections: combo.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd })),
@@ -680,6 +739,7 @@ function buildBet(
     explanation: generateExplanation(combo.selections, analysis.scenario, layer.label, combo.quality),
     layer: layer.label,
     quality: combo.quality,
+    coherence,
   };
 }
 
@@ -707,17 +767,20 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
   const usedSelectionKeys = new Set<string>();
   const bets: GeneratedBet[] = [];
 
+  const homeTeam = odds.homeTeam;
+  const awayTeam = odds.awayTeam;
+
   // Gerar uma aposta para cada camada
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     const minQuality = (input.riskProfile === "extremo" || input.riskProfile === "ultra_agressivo") ? 50 : 70;
-    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, minQuality, input.riskProfile);
+    const best = findBestCombo(candidates, layer, usedSelectionKeys, analysis, minQuality, input.riskProfile, homeTeam, awayTeam);
     if (!best) continue;
 
     best.selections.forEach((s) => usedSelectionKeys.add(`${s.market}:${s.selection}`));
     const stake = +(input.totalInvestment * layer.stakePercent).toFixed(2);
 
-    bets.push(buildBet(best, stake, layer, i, analysis));
+    bets.push(buildBet(best, stake, layer, i, analysis, homeTeam, awayTeam));
   }
 
   // Se não gerou o número solicitado, tentar preencher com apostas extras
@@ -739,7 +802,7 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
         riskLevel: profileConfig.riskLevel,
       };
 
-      const combos = generateCombinations(candidates, expandedLayer.maxSelections, expandedLayer.oddMin, expandedLayer.oddMax);
+      const combos = generateCombinations(candidates, expandedLayer.maxSelections, expandedLayer.oddMin, expandedLayer.oddMax, homeTeam, awayTeam);
       let scored = combos.map((c) => ({
         ...c,
         quality: calculateQualityScore(c.selections, c.totalOdd, analysis.scenario, input.riskProfile),
@@ -749,7 +812,14 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
       if (minScore > 0) {
         scored = scored.filter((c) => c.quality.total >= minScore);
       }
-      scored = scored.filter((c) => c.selections.length <= 6 && !hasConflict(c.selections));
+      scored = scored.filter((c) => c.selections.length <= 6 && !hasConflict(c.selections, homeTeam, awayTeam));
+
+      // Validação semântica profunda
+      scored = scored.filter((c) => {
+        const betSels: BetSelection[] = c.selections.map((s) => ({ market: s.market, selection: s.selection, odd: s.odd }));
+        const coherence = validateBetCoherence(betSels, homeTeam, awayTeam);
+        return coherence.valid;
+      });
 
       // Filtrar seleções já usadas
       scored = scored.filter((c) =>
@@ -772,7 +842,7 @@ export function generateBets(input: GameInput, odds: GameOdds): GenerationResult
           ...expandedLayer,
           label: `Camada ${bets.length + 1}`,
           riskLevel: (combo.totalOdd >= 10 ? "muito_alto" : combo.totalOdd >= 5 ? "alto" : combo.totalOdd >= 3 ? "medio" : "baixo") as BetRiskLevel,
-        }, bets.length, analysis));
+        }, bets.length, analysis, homeTeam, awayTeam));
       }
     }
 

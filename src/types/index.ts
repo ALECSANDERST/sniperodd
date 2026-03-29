@@ -64,6 +64,12 @@ export interface QualityScore {
   label: "excelente" | "boa" | "descartada";
 }
 
+export interface BetCoherenceInfo {
+  score: number;
+  label: "muito_coerente" | "coerente" | "fraca" | "incoerente" | "impossivel";
+  conflicts: { reason: string; severity: "impossible" | "incoherent" }[];
+}
+
 export interface GeneratedBet {
   id: string;
   selections: BetSelection[];
@@ -74,6 +80,7 @@ export interface GeneratedBet {
   explanation: string;
   layer: string;
   quality: QualityScore;
+  coherence?: BetCoherenceInfo;
   fixed?: boolean;
 }
 
