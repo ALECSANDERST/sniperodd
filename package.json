@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "remotion:preview": "remotion preview remotion/index.ts",
+    "remotion:render": "remotion still remotion/index.ts SniperOdd-Slide1 --output out/carousel/slide1.png && remotion still remotion/index.ts SniperOdd-Slide2 --output out/carousel/slide2.png && remotion still remotion/index.ts SniperOdd-Slide3 --output out/carousel/slide3.png && remotion still remotion/index.ts SniperOdd-Slide4 --output out/carousel/slide4.png && remotion still remotion/index.ts SniperOdd-Slide5 --output out/carousel/slide5.png && remotion still remotion/index.ts SniperOdd-Slide6 --output out/carousel/slide6.png"
   },
   "keywords": [],
   "author": "",
